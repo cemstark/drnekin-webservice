@@ -1,0 +1,20 @@
+{
+  "app_mode": "full",
+  "qr_mode": "info_page",
+  "target_url": "https://example.com",
+  "append_run_id_to_target_url": false,
+  "public_base_url": "https://cem-j9cg.onrender.com",
+  "qr_save_to_desktop": true,
+  "qr_output_filename": "qr.png",
+  "remote_sync_enabled": true,
+  "remote_base_url": "https://cem-j9cg.onrender.com",
+  "remote_admin_token": "Trinityforces321",
+  "remote_rotate_enabled": true,
+  "static_redirect_url": "https://statik-qr-website.onrender.com",
+  "current_qr_token": "",
+  "active_qr_token": "f1Y8XFqQPxlRfT-FFyv4X4h3",
+  "last_sent_qr_token": "f1Y8XFqQPxlRfT-FFyv4X4h3",
+  "info_title": "Bilgiler",
+  "info_body": "Buraya bilgilerinizi yazın.\nÖrnek:\nAd Soyad: ...\nTelefon: ...\nAdres: ...",
+  "admin_token": "slMoE3xPUWBF1O8roIhvJBHZ"
+}

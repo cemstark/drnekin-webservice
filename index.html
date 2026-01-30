@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EKİN OTO SERVİS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              navy: {
+                950: "#071226",
+                900: "#0A1A33",
+                800: "#0E2A52",
+              },
+              yellow: {
+                500: "#FBBF24",
+                400: "#FCD34D",
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 text-slate-100">
+    <main class="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-10">
+      <header class="w-full text-center">
+        <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <span class="text-yellow-400">DRN</span>EKİN OTO SERVİS
+        </h1>
+      </header>
+
+      <section class="mt-8 w-full overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10">
+        <div class="border-b border-white/10 bg-gradient-to-r from-yellow-500/15 via-white/0 to-white/0 px-6 py-4">
+          <h2 class="text-base font-semibold tracking-tight text-white">Aracınıza uyguladığımız işlemler</h2>
+        
+        </div>
+
+        <div class="px-6 py-6">
+          <!--
+            BURAYI DÜZENLE:
+            Aşağıdaki #infoContent bloğunun içini değiştirerek bilgileri güncellersiniz.
+          -->
+          <div id="infoContent" class="space-y-6">
+            <div class="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
+             
+
+              <dl class="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Araç Marka / Model</dt>
+                  <dd class="mt-1 font-semibold text-white">Renault Fluence</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Araç Plakası</dt>
+                  <dd class="mt-1 font-semibold text-white">34 KY 7546</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Araç Kilometresi</dt>
+                  <dd class="mt-1 font-semibold text-white">226.000</dd>
+                </div>
+              </dl>
+
+              <div class="mt-5">
+                <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Araca Uygulanan İşlemler</p>
+                <ul class="mt-3 space-y-2 text-sm leading-relaxed text-slate-100">
+                  <li class="flex gap-3">
+                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400"></span>
+                    <span>Arka tampon göçük düzeltme</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400"></span>
+                    <span>Genel bakım</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400"></span>
+                    <span>Sağ, sol aks değişimi</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="rounded-xl bg-white/0 px-1">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                İletişim ve Çalışma Bilgileri
+              </h3>
+              <ul class="mt-3 space-y-2 text-xs leading-relaxed text-slate-300">
+                <li class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span class="font-medium text-slate-400">Telefon:</span>
+                  <span class="font-semibold text-slate-200">0 (544) 850 08 02</span>
+                </li>
+                <li class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span class="font-medium text-slate-400">Adres:</span>
+                  <span class="font-semibold text-slate-200">Kocaeli/İzmit Sanayi Mah. D130 Karayolu No:123</span>
+                </li>
+                <li class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span class="font-medium text-slate-400">Çalışma Saatleri:</span>
+                  <span class="font-semibold text-slate-200">09:00 - 18:00</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
+

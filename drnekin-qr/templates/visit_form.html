@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - Yeni Ziyaret</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b0f17; color: #e7eefc; }
+      .card { max-width: 920px; margin: 0 auto; background: #111a2b; border: 1px solid #1f2a44; border-radius: 16px; padding: 18px; }
+      .muted { color: #a9b7d1; font-size: 14px; }
+      a { color: #7db1ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .btn { display: inline-block; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0f1730; color: #e7eefc; cursor: pointer; }
+      .btn:hover { border-color: #4060a0; }
+      label { display: block; margin: 12px 0 6px; color: #a9b7d1; font-size: 14px; }
+      input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0c1223; color: #e7eefc; }
+      textarea { min-height: 180px; resize: vertical; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2 style="margin: 0 0 8px 0;">Yeni Ziyaret</h2>
+      <p class="muted" style="margin: 0;">
+        Müşteri: <strong style="color:#fff;">{{ customer.name }}</strong> · Plaka: <strong style="color:#fff;">{{ customer.plate }}</strong>
+      </p>
+
+      <form method="post" action="/admin/customers/{{ customer.public_id }}/visits/new?token={{ token }}">
+        <div class="row">
+          <div>
+            <label for="visit_date">Tarih (YYYY-MM-DD)</label>
+            <input id="visit_date" name="visit_date" type="text" value="{{ default_date }}" placeholder="2026-01-30" />
+          </div>
+          <div>
+            <label for="km">KM</label>
+            <input id="km" name="km" type="text" placeholder="226.000" />
+          </div>
+        </div>
+
+        <label for="notes">Not (opsiyonel)</label>
+        <input id="notes" name="notes" type="text" placeholder="Örn: müşteri şikayeti..." />
+
+        <label for="operations_text">İşlemler (her satır bir işlem)</label>
+        <textarea id="operations_text" name="operations_text" placeholder="Örnek:\nGenel bakım\nArka tampon göçük düzeltme | 1500 TL\nSağ aks değişimi"></textarea>
+        <p class="muted" style="margin: 8px 0 0 0;">
+          Fiyat yazmak isterseniz: <code>işlem adı | fiyat</code>
+        </p>
+
+        <div class="btns">
+          <button class="btn" type="submit">Kaydet</button>
+          <a class="btn" href="/admin/customers/{{ customer.public_id }}?token={{ token }}">Vazgeç</a>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
+

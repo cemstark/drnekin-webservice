@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - QR Ayarları</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b0f17; color: #e7eefc; }
+      .card { max-width: 920px; margin: 0 auto; background: #111a2b; border: 1px solid #1f2a44; border-radius: 16px; padding: 18px; }
+      label { display: block; margin: 12px 0 6px; color: #a9b7d1; font-size: 14px; }
+      input[type="text"], textarea, select { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0c1223; color: #e7eefc; }
+      textarea { min-height: 180px; resize: vertical; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .btn { display: inline-block; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0f1730; color: #e7eefc; cursor: pointer; }
+      .btn:hover { border-color: #4060a0; }
+      .muted { color: #a9b7d1; font-size: 14px; }
+      code { background: #0c1223; border: 1px solid #1f2a44; padding: 2px 6px; border-radius: 8px; }
+      @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2 style="margin: 0 0 10px 0;">Admin - QR Ayarları</h2>
+      <p class="muted" style="margin-top: 0;">
+        Bu sayfaya token ile giriyorsunuz: <code>/admin?token=...</code> (token: <code>config.json</code> içindeki <code>admin_token</code>)
+      </p>
+
+      <div class="btns" style="margin-bottom: 10px;">
+        <a class="btn" href="/admin/customers?token={{ token }}">Müşteriler</a>
+        <a class="btn" href="/">Ana sayfa</a>
+      </div>
+
+      <form method="post" action="/admin/config?token={{ token }}">
+        <div class="row">
+          <div>
+            <label for="qr_mode">QR Modu</label>
+            <select id="qr_mode" name="qr_mode">
+              <option value="info_page" {% if cfg.qr_mode == "info_page" %}selected{% endif %}>info_page (QR → /info sayfası)</option>
+              <option value="target_url" {% if cfg.qr_mode == "target_url" %}selected{% endif %}>target_url (QR → hedef URL)</option>
+            </select>
+
+            <label for="target_url">Hedef URL (opsiyonel)</label>
+            <input id="target_url" name="target_url" type="text" value="{{ cfg.target_url }}" placeholder="https://..." />
+
+            <label>
+              <input type="checkbox" name="append_run_id_to_target_url" {% if cfg.append_run_id_to_target_url %}checked{% endif %} />
+              target_url modunda URL’ye RUN_ID ekle (rid=...) (bazı sitelerde istenmeyebilir)
+            </label>
+          </div>
+
+          <div>
+            <label for="info_title">/info Başlığı</label>
+            <input id="info_title" name="info_title" type="text" value="{{ cfg.info_title }}" />
+
+            <label for="info_body">/info Metni (çok satırlı)</label>
+            <textarea id="info_body" name="info_body">{{ cfg.info_body }}</textarea>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="btn" type="submit">Kaydet</button>
+          <a class="btn" href="/info" target="_blank" rel="noreferrer">/info önizleme</a>
+        </div>
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid #1f2a44; margin: 18px 0;" />
+
+      <h3 style="margin: 0 0 10px 0;">QR Üretimi</h3>
+      <p class="muted" style="margin-top: 0;">
+        Aktif QR, siz “Yeni QR üret” demedikçe süresiz geçerli kalır.
+        Yeni QR üretilince bir önceki otomatik olarak geçersizleşir.
+      </p>
+      <form method="post" action="/admin/new_qr?token={{ token }}" onsubmit="return confirm('Yeni QR üretilecek. Eski QR geçersiz olacak. Devam?');">
+        <div class="btns">
+          <button class="btn" type="submit">Yeni QR üret</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
+
+

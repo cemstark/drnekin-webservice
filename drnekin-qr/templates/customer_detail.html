@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - Müşteri Detay</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b0f17; color: #e7eefc; }
+      .card { max-width: 1040px; margin: 0 auto; background: #111a2b; border: 1px solid #1f2a44; border-radius: 16px; padding: 18px; }
+      .muted { color: #a9b7d1; font-size: 14px; }
+      code { background: #0c1223; border: 1px solid #1f2a44; padding: 2px 6px; border-radius: 8px; }
+      a { color: #7db1ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+      .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+      .btn { display: inline-block; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0f1730; color: #e7eefc; cursor: pointer; }
+      .btn:hover { border-color: #4060a0; }
+      .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; margin-top: 14px; align-items: start; }
+      .box { background: #0f1730; border: 1px solid #1f2a44; border-radius: 14px; padding: 14px; }
+      img { width: 100%; height: auto; background: white; border-radius: 12px; padding: 10px; }
+      .kv { display: grid; grid-template-columns: 120px 1fr; gap: 8px 10px; margin-top: 10px; }
+      .k { color: #a9b7d1; font-size: 13px; }
+      .v { color: #e7eefc; font-size: 14px; }
+      .visit { border-top: 1px solid #1f2a44; padding-top: 12px; margin-top: 12px; }
+      ul { margin: 8px 0 0 18px; }
+      li { margin: 4px 0; }
+      @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="top">
+        <div>
+          <h2 style="margin: 0 0 6px 0;">Müşteri Detay</h2>
+          <p class="muted" style="margin: 0;">
+            Bu müşteri için QR kalıcıdır. Müşteri QR okutup geçmişi görür.
+          </p>
+        </div>
+        <div class="btns">
+          <a class="btn" href="/admin/customers?token={{ token }}">Müşteriler</a>
+          <a class="btn" href="/admin/config?token={{ token }}">Ayarlar</a>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="box">
+          <h3 style="margin: 0 0 10px 0;">QR</h3>
+          <img src="/admin/customers/{{ customer.public_id }}/qr.png?token={{ token }}&cache={{ cache_bust }}" alt="QR" />
+          <div class="btns" style="margin-top: 10px;">
+            <a class="btn" href="/admin/customers/{{ customer.public_id }}/qr.png?token={{ token }}" download>QR indir</a>
+            <a class="btn" href="{{ public_url }}" target="_blank" rel="noreferrer">Müşteri sayfasını aç</a>
+          </div>
+          <p class="muted" style="word-break: break-word; margin: 10px 0 0 0;">
+            <strong style="color:#fff;">Link:</strong> {{ public_url }}
+          </p>
+        </div>
+
+        <div class="box">
+          <h3 style="margin: 0 0 10px 0;">Bilgiler</h3>
+          <div class="kv">
+            <div class="k">Ad Soyad</div><div class="v"><strong style="color:#fff;">{{ customer.name }}</strong></div>
+            <div class="k">Telefon</div><div class="v">{{ customer.phone }}</div>
+            <div class="k">Plaka</div><div class="v">{{ customer.plate }}</div>
+            <div class="k">Kod</div><div class="v"><code>{{ customer.public_id }}</code></div>
+          </div>
+
+          <div class="btns" style="margin-top: 14px;">
+            <a class="btn" href="/admin/customers/{{ customer.public_id }}/visits/new?token={{ token }}">Yeni Ziyaret Ekle</a>
+          </div>
+
+          <h3 style="margin: 18px 0 8px 0;">Geçmiş Ziyaretler</h3>
+          {% for v in visits %}
+            <div class="visit">
+              <div class="muted"><strong style="color:#fff;">Tarih:</strong> {{ v.visit_date }}{% if v.km %} · <strong style="color:#fff;">KM:</strong> {{ v.km }}{% endif %}</div>
+              {% if v.notes %}
+                <div class="muted" style="margin-top: 6px;"><strong style="color:#fff;">Not:</strong> {{ v.notes }}</div>
+              {% endif %}
+              {% set ops = operations_by_visit.get(v.id, []) %}
+              {% if ops|length %}
+                <ul>
+                  {% for op in ops %}
+                    <li>
+                      {{ op.text }}
+                      {% if op.price %}
+                        <span class="muted"> ({{ op.price }})</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="muted" style="margin-top: 6px;">İşlem girilmemiş.</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+          {% if visits|length == 0 %}
+            <div class="muted">Henüz ziyaret yok.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

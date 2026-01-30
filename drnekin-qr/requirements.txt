@@ -1,0 +1,6 @@
+Flask==3.0.2
+# gunicorn Windows'ta kullanılmaz; deploy ortamında (Linux) gerekir.
+gunicorn==21.2.0; platform_system != "Windows"
+qrcode[pil]==7.4.2
+
+

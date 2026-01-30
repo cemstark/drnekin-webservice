@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b0f17; color: #e7eefc; }
+      .card { max-width: 920px; margin: 0 auto; background: #111a2b; border: 1px solid #1f2a44; border-radius: 16px; padding: 18px; }
+      .muted { color: #a9b7d1; font-size: 14px; }
+      .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 10px; margin-top: 10px; }
+      .k { color: #a9b7d1; font-size: 13px; }
+      .v { color: #e7eefc; font-size: 14px; }
+      .visit { border-top: 1px solid #1f2a44; padding-top: 12px; margin-top: 12px; }
+      ul { margin: 8px 0 0 18px; }
+      li { margin: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2 style="margin: 0 0 8px 0;">{{ title }}</h2>
+      <p class="muted" style="margin: 0;">
+        Bu sayfa, aracınıza yapılan işlemleri ve geçmişinizi gösterir.
+      </p>
+
+      <div class="kv">
+        <div class="k">Müşteri</div><div class="v"><strong style="color:#fff;">{{ customer.name }}</strong></div>
+        {% if customer.phone %}<div class="k">Telefon</div><div class="v">{{ customer.phone }}</div>{% endif %}
+        {% if customer.plate %}<div class="k">Plaka</div><div class="v">{{ customer.plate }}</div>{% endif %}
+      </div>
+
+      <h3 style="margin: 18px 0 8px 0;">Geçmiş Ziyaretler</h3>
+      {% for v in visits %}
+        <div class="visit">
+          <div class="muted"><strong style="color:#fff;">Tarih:</strong> {{ v.visit_date }}{% if v.km %} · <strong style="color:#fff;">KM:</strong> {{ v.km }}{% endif %}</div>
+          {% if v.notes %}
+            <div class="muted" style="margin-top: 6px;"><strong style="color:#fff;">Not:</strong> {{ v.notes }}</div>
+          {% endif %}
+          {% set ops = operations_by_visit.get(v.id, []) %}
+          {% if ops|length %}
+            <ul>
+              {% for op in ops %}
+                <li>
+                  {{ op.text }}
+                  {% if op.price %}
+                    <span class="muted"> ({{ op.price }})</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="muted" style="margin-top: 6px;">İşlem bilgisi yok.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      {% if visits|length == 0 %}
+        <div class="muted">Henüz kayıt yok.</div>
+      {% endif %}
+    </div>
+  </body>
+</html>
+

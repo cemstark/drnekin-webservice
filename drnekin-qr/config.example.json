@@ -1,0 +1,16 @@
+{
+  "app_mode": "full",
+  "qr_mode": "info_page",
+  "target_url": "https://example.com",
+  "append_run_id_to_target_url": false,
+  "public_base_url": "",
+  "qr_save_to_desktop": true,
+  "qr_output_filename": "qr.png",
+  "remote_sync_enabled": false,
+  "remote_base_url": "",
+  "remote_admin_token": "",
+  "info_title": "Bilgiler",
+  "info_body": "Buraya bilgilerinizi yazın.\nÖrnek:\nAd Soyad: ...\nTelefon: ...\nAdres: ...",
+  "admin_token": ""
+}
+

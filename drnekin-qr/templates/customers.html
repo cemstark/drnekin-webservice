@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin - Müşteriler</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b0f17; color: #e7eefc; }
+      .card { max-width: 1040px; margin: 0 auto; background: #111a2b; border: 1px solid #1f2a44; border-radius: 16px; padding: 18px; }
+      .muted { color: #a9b7d1; font-size: 14px; }
+      code { background: #0c1223; border: 1px solid #1f2a44; padding: 2px 6px; border-radius: 8px; }
+      a { color: #7db1ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+      .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+      .btn { display: inline-block; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0f1730; color: #e7eefc; cursor: pointer; }
+      .btn:hover { border-color: #4060a0; }
+      input[type="text"] { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1px solid #2a3a5f; background: #0c1223; color: #e7eefc; }
+      label { display: block; margin: 12px 0 6px; color: #a9b7d1; font-size: 14px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+      th, td { border-top: 1px solid #1f2a44; padding: 10px 8px; vertical-align: top; }
+      th { text-align: left; font-size: 12px; color: #a9b7d1; text-transform: uppercase; letter-spacing: .04em; }
+      td { font-size: 14px; }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #2a3a5f; background: #0c1223; color: #a9b7d1; font-size: 12px; }
+      @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="top">
+        <div>
+          <h2 style="margin: 0 0 8px 0;">Müşteriler</h2>
+          <p class="muted" style="margin: 0;">
+            Arama: plaka / telefon / isim. Admin token: <code>?token=...</code>
+          </p>
+        </div>
+        <div class="btns">
+          <a class="btn" href="/admin/config?token={{ token }}">Ayarlar</a>
+          <a class="btn" href="/">Ana sayfa</a>
+        </div>
+      </div>
+
+      <form method="get" action="/admin/customers">
+        <input type="hidden" name="token" value="{{ token }}" />
+        <label for="q">Ara</label>
+        <input id="q" name="q" type="text" placeholder="34 ABC 123 / 05xx / Ahmet" value="{{ q }}" />
+        <div class="btns" style="margin-top: 10px;">
+          <button class="btn" type="submit">Ara</button>
+          <a class="btn" href="/admin/customers?token={{ token }}">Temizle</a>
+        </div>
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid #1f2a44; margin: 18px 0;" />
+
+      <h3 style="margin: 0 0 10px 0;">Yeni Müşteri</h3>
+      <form method="post" action="/admin/customers/new?token={{ token }}">
+        <div class="row">
+          <div>
+            <label for="name">Ad Soyad</label>
+            <input id="name" name="name" type="text" placeholder="Örn: Ahmet Yılmaz" required />
+          </div>
+          <div>
+            <label for="phone">Telefon</label>
+            <input id="phone" name="phone" type="text" placeholder="0 (5xx) ..." />
+          </div>
+          <div>
+            <label for="plate">Plaka</label>
+            <input id="plate" name="plate" type="text" placeholder="34 ABC 123" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top: 12px;">
+          <button class="btn" type="submit">Müşteri Oluştur</button>
+        </div>
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid #1f2a44; margin: 18px 0;" />
+
+      <div class="top">
+        <h3 style="margin: 0;">Liste</h3>
+        <span class="pill">{{ customers|length }} kayıt</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>İsim</th>
+            <th>Telefon</th>
+            <th>Plaka</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in customers %}
+            <tr>
+              <td><strong style="color:#fff;">{{ c.name }}</strong></td>
+              <td>{{ c.phone }}</td>
+              <td>{{ c.plate }}</td>
+              <td>
+                <a href="/admin/customers/{{ c.public_id }}?token={{ token }}">Detay</a>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if customers|length == 0 %}
+            <tr><td colspan="4" class="muted">Kayıt yok.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
+
