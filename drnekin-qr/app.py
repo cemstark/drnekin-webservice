@@ -18,6 +18,7 @@ from db import init_db
 from db import (
     create_customer,
     create_visit,
+    delete_customer_by_public_id,
     get_customer_by_public_id,
     list_customers,
     list_operations_for_visit,
@@ -110,7 +111,10 @@ def _qr_payload_url(cfg: dict) -> str:
 
 
 def _public_url_for_customer(cfg: dict, public_id: str, secret: str) -> str:
-    base = (cfg.get("public_base_url") or "").strip() or _public_base_url()
+    # IMPORTANT: For customer QR codes generated on the hosted site, always prefer the
+    # current request base URL. This prevents "Not Found" when an old public_base_url
+    # is stored in config.json from a previous deploy/domain.
+    base = _public_base_url()
     # /c/<id>?k=<secret>
     return _with_query(base.rstrip("/") + url_for("customer_public", public_id=public_id), {"k": secret})
 
@@ -561,6 +565,19 @@ def admin_customer_detail(public_id: str):
         public_url=public_url,
         cache_bust=RUN_ID,
     )
+
+
+@app.post("/admin/customers/<public_id>/delete")
+def admin_customer_delete(public_id: str):
+    cfg = load_config()
+    if not _require_admin(cfg):
+        return ("Yetkisiz.", 401)
+    if _is_host_only(cfg):
+        return ("Not Found", 404)
+    ok = delete_customer_by_public_id(cfg, public_id)
+    if not ok:
+        return ("Bulunamadı.", 404)
+    return redirect(url_for("admin_customers", token=cfg.get("admin_token")))
 
 
 @app.get("/admin/customers/<public_id>/qr.png")

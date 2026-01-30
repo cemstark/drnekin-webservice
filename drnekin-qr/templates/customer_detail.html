@@ -66,6 +66,9 @@
 
           <div class="btns" style="margin-top: 14px;">
             <a class="btn" href="/admin/customers/{{ customer.public_id }}/visits/new?token={{ token }}">Yeni Ziyaret Ekle</a>
+            <form method="post" action="/admin/customers/{{ customer.public_id }}/delete?token={{ token }}" onsubmit="return confirm('Bu müşteriyi ve tüm geçmiş işlemlerini silmek istiyor musun?');" style="margin:0;">
+              <button class="btn" type="submit">Müşteriyi Sil</button>
+            </form>
           </div>
 
           <h3 style="margin: 18px 0 8px 0;">Geçmiş Ziyaretler</h3>

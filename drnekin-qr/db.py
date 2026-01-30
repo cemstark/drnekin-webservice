@@ -183,6 +183,20 @@ def get_customer_by_public_id(cfg: dict, public_id: str) -> Customer | None:
     return _row_to_customer(row) if row else None
 
 
+def delete_customer_by_public_id(cfg: dict, public_id: str) -> bool:
+    """
+    Deletes customer and cascades visits/operations.
+    Returns True if a row was deleted.
+    """
+    init_db(cfg)
+    public_id = (public_id or "").strip()
+    if not public_id:
+        return False
+    with connect(cfg) as con:
+        cur = con.execute("DELETE FROM customers WHERE public_id = ?", (public_id,))
+        return bool(cur.rowcount and cur.rowcount > 0)
+
+
 def touch_customer_updated_at(cfg: dict, customer_id: int) -> None:
     now = _utc_now_iso()
     with connect(cfg) as con:
