@@ -670,7 +670,10 @@ def customer_public(public_id: str):
     if not customer:
         return ("Not Found", 404)
     k = str(request.args.get("k") or "")
-    if not k or not secrets.compare_digest(k, customer.secret):
+    # Be tolerant to trailing '=' padding differences (some QR readers drop it).
+    k_norm = k.rstrip("=")
+    secret_norm = str(customer.secret).rstrip("=")
+    if not k_norm or not secrets.compare_digest(k_norm, secret_norm):
         return ("Not Found", 404)
     visits = list_visits_for_customer(cfg, customer.id)
     operations_by_visit: dict[int, list] = {}

@@ -93,7 +93,9 @@ def _new_public_id() -> str:
 
 
 def _new_secret() -> str:
-    return secrets.token_urlsafe(24)
+    # Some QR readers / sharing apps may drop trailing '=' padding in URLs.
+    # To avoid accidental token mismatch, store secrets without '=' padding.
+    return secrets.token_urlsafe(24).rstrip("=")
 
 
 @dataclass(frozen=True)
