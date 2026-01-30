@@ -37,6 +37,7 @@
       }
       .header { display: flex; gap: 14px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
       h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+      .brandMark { color: var(--accent); }
       .sub { margin: 6px 0 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
       .badge {
         display: inline-flex; align-items: center; gap: 8px;
@@ -101,7 +102,7 @@
       <div class="card">
         <div class="header">
           <div>
-            <h1>{{ title }}</h1>
+            <h1><span class="brandMark">DRN</span>EKİN OTO</h1>
             <p class="sub">Aracınıza yapılan işlemler ve geçmiş ziyaretler burada listelenir.</p>
           </div>
           <div class="badge"><span class="dot"></span><span>Kayıtlı müşteri sayfası</span></div>
@@ -112,7 +113,7 @@
             <h2>Müşteri Bilgileri</h2>
             <div class="kv">
               <div class="k">Müşteri</div><div class="v"><strong>{{ customer.name }}</strong></div>
-              {% if customer.phone %}<div class="k">Telefon</div><div class="v">{{ customer.phone }}</div>{% endif %}
+              {% if customer.phone %}<div class="k">Telefon</div><div class="v"><strong>{{ customer.phone }}</strong></div>{% endif %}
               {% if customer.plate %}<div class="k">Plaka</div><div class="v">{{ customer.plate }}</div>{% endif %}
             </div>
           </div>
