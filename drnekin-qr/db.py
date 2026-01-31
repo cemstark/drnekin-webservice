@@ -14,11 +14,29 @@ def _utc_now_iso() -> str:
     return datetime.utcnow().replace(microsecond=0).isoformat(sep=" ")
 
 
+def _default_user_db_path() -> str:
+    """
+    Return a stable per-user SQLite path.
+    This prevents data from appearing "deleted" when the app folder is moved/copied.
+    """
+    # Windows
+    base = (os.getenv("LOCALAPPDATA") or os.getenv("APPDATA") or "").strip()
+    if base:
+        return str(Path(base) / "drnekin-qr" / "app.db")
+
+    # Linux / macOS
+    xdg = (os.getenv("XDG_DATA_HOME") or "").strip()
+    if xdg:
+        return str(Path(xdg) / "drnekin-qr" / "app.db")
+    return str(Path.home() / ".local" / "share" / "drnekin-qr" / "app.db")
+
+
 def _db_path(cfg: dict | None = None) -> str:
     # Priority:
     # 1) env QR_DB_PATH (for Render persistent disk: /var/data/app.db)
     # 2) config field db_path (optional)
-    # 3) app-local db in project directory
+    # 3) if app-local db exists, keep using it (back-compat)
+    # 4) otherwise use stable per-user db path
     env = (os.getenv("QR_DB_PATH") or "").strip()
     if env:
         return env
@@ -27,7 +45,10 @@ def _db_path(cfg: dict | None = None) -> str:
         if p:
             return p
     here = Path(__file__).resolve().parent
-    return str(here / "app.db")
+    local = here / "app.db"
+    if local.exists():
+        return str(local)
+    return _default_user_db_path()
 
 
 def connect(cfg: dict | None = None) -> sqlite3.Connection:

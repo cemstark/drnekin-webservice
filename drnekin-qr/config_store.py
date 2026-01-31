@@ -1,6 +1,7 @@
 import json
 import os
 import secrets
+from pathlib import Path
 from typing import Any, Dict
 
 
@@ -35,12 +36,36 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
+def _default_user_config_path() -> str:
+    """
+    Return a stable per-user config path.
+    This prevents "lost" settings when the app folder is moved or copied.
+    """
+    # Windows
+    base = (os.getenv("APPDATA") or os.getenv("LOCALAPPDATA") or "").strip()
+    if base:
+        return str(Path(base) / "drnekin-qr" / "config.json")
+
+    # Linux / macOS
+    xdg = (os.getenv("XDG_CONFIG_HOME") or "").strip()
+    if xdg:
+        return str(Path(xdg) / "drnekin-qr" / "config.json")
+    return str(Path.home() / ".config" / "drnekin-qr" / "config.json")
+
+
 def _config_path() -> str:
     env_path = (os.getenv("QR_CONFIG_PATH") or "").strip()
     if env_path:
         return env_path
-    here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(here, "config.json")
+
+    # Back-compat: if there's already a config.json next to the app code, keep using it.
+    here = Path(__file__).resolve().parent
+    local = here / "config.json"
+    if local.exists():
+        return str(local)
+
+    # Default: stable per-user config location.
+    return _default_user_config_path()
 
 
 def load_config() -> Dict[str, Any]:
