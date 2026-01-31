@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sqlite3
 import secrets
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, date
 from pathlib import Path
@@ -31,12 +32,26 @@ def _default_user_db_path() -> str:
     return str(Path.home() / ".local" / "share" / "drnekin-qr" / "app.db")
 
 
+def _default_server_db_path() -> str | None:
+    """
+    Return a sensible server-side default if a persistent mount exists.
+    Render instructions mount a persistent disk at /var/data.
+    """
+    try:
+        p = Path("/var/data")
+        if p.exists() and p.is_dir():
+            return str(p / "app.db")
+    except Exception:
+        pass
+    return None
+
+
 def _db_path(cfg: dict | None = None) -> str:
     # Priority:
     # 1) env QR_DB_PATH (for Render persistent disk: /var/data/app.db)
     # 2) config field db_path (optional)
-    # 3) if app-local db exists, keep using it (back-compat)
-    # 4) otherwise use stable per-user db path
+    # 3) server default if /var/data is present
+    # 4) stable per-user db path (with migration from local app.db if present)
     env = (os.getenv("QR_DB_PATH") or "").strip()
     if env:
         return env
@@ -46,9 +61,26 @@ def _db_path(cfg: dict | None = None) -> str:
             return p
     here = Path(__file__).resolve().parent
     local = here / "app.db"
-    if local.exists():
-        return str(local)
-    return _default_user_db_path()
+    server = _default_server_db_path()
+    if server:
+        return server
+    user = Path(_default_user_db_path())
+    try:
+        if local.exists():
+            if not user.exists():
+                user.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(local, user)
+            else:
+                if local.stat().st_mtime > user.stat().st_mtime:
+                    user.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(local, user)
+    except Exception:
+        pass
+    return str(user)
+
+
+def get_db_path(cfg: dict | None = None) -> str:
+    return _db_path(cfg)
 
 
 def connect(cfg: dict | None = None) -> sqlite3.Connection:

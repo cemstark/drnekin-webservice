@@ -15,6 +15,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config_store import load_config, save_config
 from db import init_db
+from db import get_db_path
 from db import (
     create_customer,
     create_visit,
@@ -30,6 +31,7 @@ RUN_ID = secrets.token_urlsafe(8)
 _SAVED_ONCE = False
 _LAST_SAVED_PATH: str | None = None
 _LAST_SAVE_ERROR: str | None = None
+_PRINTED_STORAGE_INFO = False
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
@@ -38,7 +40,14 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 @app.before_request
 def _ensure_db():
     # Very cheap after first run; makes sure tables exist for every deployment.
+    global _PRINTED_STORAGE_INFO
     cfg = load_config()
+    if not _PRINTED_STORAGE_INFO:
+        _PRINTED_STORAGE_INFO = True
+        try:
+            print("[storage] db_path=", get_db_path(cfg))
+        except Exception:
+            pass
     init_db(cfg)
 
 def _app_mode(cfg: dict) -> str:
@@ -309,6 +318,33 @@ def qr_png():
 def _require_admin(cfg: dict) -> bool:
     token = (request.args.get("token") or "").strip()
     return bool(token) and token == (cfg.get("admin_token") or "")
+
+
+@app.get("/admin/debug/storage")
+def admin_debug_storage():
+    cfg = load_config()
+    if not _require_admin(cfg):
+        return ("Yetkisiz.", 401)
+
+    def _stat(p: str) -> dict:
+        try:
+            st = os.stat(p)
+            return {"exists": True, "size": int(st.st_size)}
+        except FileNotFoundError:
+            return {"exists": False}
+        except Exception as e:
+            return {"exists": False, "error": repr(e)}
+
+    db_path = get_db_path(cfg)
+    payload = {
+        "app_mode": (os.getenv("APP_MODE") or cfg.get("app_mode") or "").strip(),
+        "db_path": db_path,
+        "db": _stat(db_path),
+        "qr_db_path_env": bool((os.getenv("QR_DB_PATH") or "").strip()),
+        "qr_config_path": (os.getenv("QR_CONFIG_PATH") or "").strip() or "(auto)",
+        "qr_config_path_env": bool((os.getenv("QR_CONFIG_PATH") or "").strip()),
+    }
+    return Response(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", mimetype="application/json")
 
 
 def _require_bearer(cfg: dict) -> bool:
@@ -668,12 +704,27 @@ def customer_public(public_id: str):
     cfg = load_config()
     customer = get_customer_by_public_id(cfg, public_id)
     if not customer:
+        try:
+            print("[customer_public] missing customer:", public_id, "db_path=", get_db_path(cfg))
+        except Exception:
+            pass
         return ("Not Found", 404)
     k = str(request.args.get("k") or "")
     # Be tolerant to trailing '=' padding differences (some QR readers drop it).
     k_norm = k.rstrip("=")
     secret_norm = str(customer.secret).rstrip("=")
     if not k_norm or not secrets.compare_digest(k_norm, secret_norm):
+        try:
+            print(
+                "[customer_public] secret mismatch:",
+                public_id,
+                "k_len=",
+                len(k_norm),
+                "db_path=",
+                get_db_path(cfg),
+            )
+        except Exception:
+            pass
         return ("Not Found", 404)
     visits = list_visits_for_customer(cfg, customer.id)
     operations_by_visit: dict[int, list] = {}

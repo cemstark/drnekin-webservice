@@ -2,6 +2,7 @@ import json
 import os
 import secrets
 from pathlib import Path
+import shutil
 from typing import Any, Dict
 
 
@@ -53,19 +54,49 @@ def _default_user_config_path() -> str:
     return str(Path.home() / ".config" / "drnekin-qr" / "config.json")
 
 
+def _default_server_config_path() -> str | None:
+    """
+    Return a sensible server-side default if a persistent mount exists.
+    Render instructions mount a persistent disk at /var/data.
+    """
+    try:
+        p = Path("/var/data")
+        if p.exists() and p.is_dir():
+            return str(p / "config.json")
+    except Exception:
+        pass
+    return None
+
+
 def _config_path() -> str:
     env_path = (os.getenv("QR_CONFIG_PATH") or "").strip()
     if env_path:
         return env_path
 
-    # Back-compat: if there's already a config.json next to the app code, keep using it.
     here = Path(__file__).resolve().parent
-    local = here / "config.json"
-    if local.exists():
-        return str(local)
+    server = _default_server_config_path()
+    if server:
+        return server
 
-    # Default: stable per-user config location.
-    return _default_user_config_path()
+    # Default: stable per-user config location. If an old local config.json exists,
+    # migrate it once so settings don't "reset" when the folder moves.
+    user = Path(_default_user_config_path())
+    local = here / "config.json"
+    try:
+        if local.exists():
+            # If user config doesn't exist yet, migrate.
+            if not user.exists():
+                user.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(local, user)
+            else:
+                # If local is newer (common when app was run from folder), prefer it.
+                if local.stat().st_mtime > user.stat().st_mtime:
+                    user.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(local, user)
+    except Exception:
+        # Best-effort migration; fall back to user path.
+        pass
+    return str(user)
 
 
 def load_config() -> Dict[str, Any]:
