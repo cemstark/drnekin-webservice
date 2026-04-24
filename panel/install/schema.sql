@@ -44,3 +44,17 @@ CREATE TABLE IF NOT EXISTS import_logs (
   PRIMARY KEY (id),
   KEY import_logs_created_at_index (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pending_excel_updates (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  record_no VARCHAR(80) NOT NULL,
+  fields_json JSON NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  error_message TEXT NULL,
+  created_by INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  applied_at DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY pending_excel_updates_status_index (status),
+  KEY pending_excel_updates_record_no_index (record_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

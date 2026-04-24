@@ -218,6 +218,19 @@ th {
   color: var(--muted);
 }
 
+.check-row {
+  display: flex !important;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.check-row input {
+  min-height: auto;
+  width: 18px;
+  height: 18px;
+}
+
 .login-card button {
   width: 100%;
   margin-top: 20px;

@@ -26,6 +26,8 @@ Ilk satir baslik satiri olmalidir. Desteklenen temel kolonlar:
 
 `Kayit No`, `Plaka`, `Ad Soyad` ve `Servise Giris Tarihi` zorunludur. Ayni `Kayit No` tekrar import edilirse paneldeki kayit guncellenir.
 
+Paneldeki `Duzenle` ekrani kaydi veritabaninda gunceller ve Excel'e yazilacak degisikligi kuyruga ekler. Bilgisayardaki sync ajani bu kuyrugu okuyup Excel dosyasini gunceller.
+
 ## Import API
 
 Windows sync ajani su adrese `.xlsx` dosyasi gonderir:

@@ -113,6 +113,7 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
               <th>Mini Onarim</th>
               <th>Giris</th>
               <th>Cikis</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -126,10 +127,11 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
                 <td><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : 'Yok' ?></td>
                 <td><?= e($record['service_entry_date']) ?></td>
                 <td><?= e($record['service_exit_date'] ?: '-') ?></td>
+                <td><a href="<?= e(panel_url('edit.php?id=' . (int)$record['id'])) ?>">Duzenle</a></td>
               </tr>
             <?php endforeach; ?>
             <?php if ($records === []): ?>
-              <tr><td colspan="8" class="empty">Filtreye uygun kayit bulunamadi.</td></tr>
+              <tr><td colspan="9" class="empty">Filtreye uygun kayit bulunamadi.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>
