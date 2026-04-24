@@ -181,6 +181,95 @@ def set_excel_cell(ws, row: int, column: int | None, value) -> None:
     ws.cell(row=row, column=column).value = value
 
 
+def workbook_is_open_in_excel(excel_path: Path):
+    try:
+        import win32com.client
+    except ImportError:
+        return None
+
+    try:
+        excel = win32com.client.GetActiveObject("Excel.Application")
+    except Exception:
+        return None
+
+    wanted = str(excel_path.resolve()).lower()
+    for workbook in excel.Workbooks:
+        try:
+            if str(workbook.FullName).lower() == wanted:
+                return workbook
+        except Exception:
+            continue
+    return None
+
+
+def com_cell_value(ws, row: int, column: int):
+    value = ws.Cells(row, column).Value
+    return "" if value is None else value
+
+
+def com_set_cell(ws, row: int, column: int | None, value) -> None:
+    if not column:
+        return
+    ws.Cells(row, column).Value = "" if value is None else value
+
+
+def apply_updates_to_open_workbook(excel_path: Path, updates: list) -> tuple[list, list] | None:
+    workbook = workbook_is_open_in_excel(excel_path)
+    if workbook is None:
+        return None
+
+    row_index = {}
+    for sheet_number in range(1, workbook.Worksheets.Count + 1):
+        ws = workbook.Worksheets(sheet_number)
+        headers = [com_cell_value(ws, 1, col) for col in range(1, ws.UsedRange.Columns.Count + 1)]
+        mapping = build_header_map(headers)
+        if not {"plate", "customer_name", "service_entry_date"}.issubset(mapping):
+            continue
+
+        last_row = int(ws.Cells(ws.Rows.Count, mapping["plate"]).End(-4162).Row)
+        for row in range(2, last_row + 1):
+            values = [com_cell_value(ws, row, col) for col in range(1, ws.UsedRange.Columns.Count + 1)]
+            if not any(value is not None and str(value).strip() for value in values):
+                continue
+
+            plate = str(com_cell_value(ws, row, mapping["plate"]) or "").strip()
+            entry = date_value(com_cell_value(ws, row, mapping["service_entry_date"]))
+            file_no = str(com_cell_value(ws, row, mapping.get("file_no", 0)) or "").strip() if mapping.get("file_no") else ""
+            for sheet_name in (ws.Name, f"Sheet{sheet_number}"):
+                record_no = generated_record_no(sheet_name, plate, entry, file_no, row)
+                row_index[record_no] = (ws, row, mapping)
+
+    applied = []
+    failed = []
+    for update in updates:
+        update_id = int(update.get("id", 0))
+        record_no = str(update.get("record_no", ""))
+        fields = update.get("fields") or {}
+        target = row_index.get(record_no)
+        if not target:
+            failed.append({"id": update_id, "error": f"Excel row not found for {record_no}"})
+            continue
+
+        ws, row, mapping = target
+        try:
+            com_set_cell(ws, row, mapping.get("plate"), fields.get("plate"))
+            com_set_cell(ws, row, mapping.get("customer_name"), fields.get("customer_name"))
+            com_set_cell(ws, row, mapping.get("insurance_company"), fields.get("insurance_company"))
+            com_set_cell(ws, row, mapping.get("repair_status"), fields.get("repair_status"))
+            com_set_cell(ws, row, mapping.get("mini_repair_part"), fields.get("mini_repair_part") if fields.get("mini_repair_has") else "")
+            com_set_cell(ws, row, mapping.get("service_entry_date"), fields.get("service_entry_date"))
+            com_set_cell(ws, row, mapping.get("service_exit_date"), fields.get("service_exit_date") or "")
+            applied.append(update_id)
+        except Exception as exc:
+            failed.append({"id": update_id, "error": str(exc)})
+
+    if applied:
+        workbook.Save()
+        logging.info("Applied %s panel update(s) to open Excel workbook", len(applied))
+
+    return applied, failed
+
+
 def apply_pending_updates(excel_path: Path, updates_url: str, api_key: str) -> int:
     pending = api_json(updates_url, api_key)
     if not pending.get("ok"):
@@ -190,6 +279,16 @@ def apply_pending_updates(excel_path: Path, updates_url: str, api_key: str) -> i
     updates = pending.get("updates") or []
     if not updates:
         return 0
+
+    com_result = apply_updates_to_open_workbook(excel_path, updates)
+    if com_result is not None:
+        applied, failed = com_result
+        result = api_json(updates_url, api_key, {"applied": applied, "failed": failed})
+        if not result.get("ok"):
+            logging.error("Could not confirm panel updates: %s", result.get("error") or result)
+        for failure in failed:
+            logging.error("Panel update failed: %s", failure)
+        return len(applied)
 
     try:
         from openpyxl import load_workbook
@@ -204,7 +303,7 @@ def apply_pending_updates(excel_path: Path, updates_url: str, api_key: str) -> i
     wb = load_workbook(excel_path)
     row_index = {}
     maps = {}
-    for ws in wb.worksheets:
+    for sheet_number, ws in enumerate(wb.worksheets, start=1):
         headers = [cell.value for cell in ws[1]]
         mapping = build_header_map(headers)
         maps[ws.title] = mapping
@@ -217,8 +316,9 @@ def apply_pending_updates(excel_path: Path, updates_url: str, api_key: str) -> i
             plate = str(ws.cell(row=row, column=mapping["plate"]).value or "").strip()
             entry = date_value(ws.cell(row=row, column=mapping["service_entry_date"]).value)
             file_no = str(ws.cell(row=row, column=mapping.get("file_no", 0)).value or "").strip() if mapping.get("file_no") else ""
-            record_no = generated_record_no(ws.title, plate, entry, file_no, row)
-            row_index[record_no] = (ws, row, mapping)
+            for sheet_name in (ws.title, f"Sheet{sheet_number}"):
+                record_no = generated_record_no(sheet_name, plate, entry, file_no, row)
+                row_index[record_no] = (ws, row, mapping)
 
     applied = []
     failed = []
