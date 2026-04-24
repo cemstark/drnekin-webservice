@@ -7,6 +7,7 @@ require_login();
 
 $result = null;
 $error = '';
+$lastLog = db()->query('SELECT * FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -75,6 +76,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (!empty($result['errors'])): ?>
           <pre class="error-list"><?= e(implode("\n", array_slice($result['errors'], 0, 20))) ?></pre>
         <?php endif; ?>
+      <?php endif; ?>
+
+      <?php if ($lastLog): ?>
+        <div class="log-note">
+          Son log: <?= e($lastLog['created_at']) ?>,
+          durum <?= e($lastLog['status']) ?>,
+          aktarilan <?= e($lastLog['imported_count']) ?>,
+          atlanan <?= e($lastLog['skipped_count']) ?>.
+          <?php if (!empty($lastLog['error_summary'])): ?>
+            <pre class="error-list"><?= e($lastLog['error_summary']) ?></pre>
+          <?php endif; ?>
+        </div>
       <?php endif; ?>
     </section>
   </main>

@@ -251,6 +251,12 @@ th {
   white-space: pre-wrap;
 }
 
+.log-note {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 @media (max-width: 900px) {
   .topbar, .table-head {
     align-items: flex-start;

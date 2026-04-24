@@ -22,6 +22,7 @@ function xlsx_read_sheets(string $path): array
 
     $sharedStrings = xlsx_shared_strings($zip);
     $sheetPaths = xlsx_sheet_paths($zip);
+    $sheetPaths = xlsx_add_worksheet_fallbacks($zip, $sheetPaths);
     $sheets = [];
     foreach ($sheetPaths as $sheet) {
         $sheetXml = $zip->getFromName($sheet['path']);
@@ -148,6 +149,38 @@ function xlsx_sheet_paths(ZipArchive $zip): array
     }
 
     return $result !== [] ? $result : [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
+}
+
+function xlsx_add_worksheet_fallbacks(ZipArchive $zip, array $sheetPaths): array
+{
+    $known = [];
+    foreach ($sheetPaths as $sheet) {
+        $known[$sheet['path']] = true;
+    }
+
+    $fallbacks = [];
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if (!is_string($name) || !preg_match('#^xl/worksheets/sheet(\d+)\.xml$#', $name, $matches)) {
+            continue;
+        }
+
+        if (!isset($known[$name])) {
+            $fallbacks[] = [
+                'name' => 'Sheet' . $matches[1],
+                'path' => $name,
+            ];
+            $known[$name] = true;
+        }
+    }
+
+    usort($fallbacks, static function (array $a, array $b): int {
+        preg_match('/(\d+)/', $a['name'], $aMatch);
+        preg_match('/(\d+)/', $b['name'], $bMatch);
+        return ((int)($aMatch[1] ?? 0)) <=> ((int)($bMatch[1] ?? 0));
+    });
+
+    return array_merge($sheetPaths, $fallbacks);
 }
 
 function xlsx_target_path(string $target): string
