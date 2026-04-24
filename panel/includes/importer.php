@@ -9,6 +9,7 @@ function import_excel_file(string $path, string $sourceName): array
     $started = microtime(true);
     $sheets = xlsx_read_sheets($path);
     $errors = [];
+    $sheetSummaries = [];
     $imported = 0;
     $skipped = 0;
     $pdo = db();
@@ -17,8 +18,10 @@ function import_excel_file(string $path, string $sourceName): array
     try {
         foreach ($sheets as $sheet) {
             $rows = $sheet['rows'];
+            $sheetImported = 0;
             if (count($rows) < 2) {
                 $errors[] = 'Sayfa ' . $sheet['name'] . ': veri satiri okunamadi.';
+                $sheetSummaries[] = $sheet['name'] . ': 0 kayit';
                 continue;
             }
 
@@ -26,6 +29,7 @@ function import_excel_file(string $path, string $sourceName): array
             $map = build_header_map($header);
             if (count($map) < 2) {
                 $errors[] = 'Sayfa ' . $sheet['name'] . ': basliklar taninamadi: ' . implode(' | ', array_slice($header, 0, 12));
+                $sheetSummaries[] = $sheet['name'] . ': 0 kayit';
                 continue;
             }
 
@@ -37,6 +41,7 @@ function import_excel_file(string $path, string $sourceName): array
             }
             if ($missing !== []) {
                 $errors[] = 'Sayfa ' . $sheet['name'] . ': eksik kolonlar: ' . implode(', ', $missing);
+                $sheetSummaries[] = $sheet['name'] . ': 0 kayit';
                 continue;
             }
 
@@ -83,7 +88,10 @@ function import_excel_file(string $path, string $sourceName): array
 
                 upsert_service_record($pdo, $record);
                 $imported++;
+                $sheetImported++;
             }
+
+            $sheetSummaries[] = $sheet['name'] . ': ' . $sheetImported . ' kayit';
         }
 
         $pdo->commit();
@@ -92,7 +100,11 @@ function import_excel_file(string $path, string $sourceName): array
         throw $e;
     }
 
-    if ($imported === 0 && $errors === []) {
+    if ($sheetSummaries !== []) {
+        array_unshift($errors, 'Sayfa ozeti: ' . implode(', ', $sheetSummaries));
+    }
+
+    if ($imported === 0 && count($errors) <= 1) {
         $errors[] = 'Excel dosyasinda aktarilabilir veri bulunamadi.';
     }
 

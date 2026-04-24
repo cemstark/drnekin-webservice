@@ -132,12 +132,7 @@ function xlsx_sheet_paths(ZipArchive $zip): array
     $relationships = $relsXml->children('http://schemas.openxmlformats.org/package/2006/relationships');
     foreach ($relationships->Relationship as $rel) {
         $target = (string)$rel['Target'];
-        if (str_starts_with($target, '/xl/')) {
-            $path = ltrim($target, '/');
-        } else {
-            $path = str_starts_with($target, 'xl/') ? $target : 'xl/' . ltrim($target, '/');
-        }
-        $pathsByRel[(string)$rel['Id']] = $path;
+        $pathsByRel[(string)$rel['Id']] = xlsx_target_path($target);
     }
 
     $result = [];
@@ -153,6 +148,32 @@ function xlsx_sheet_paths(ZipArchive $zip): array
     }
 
     return $result !== [] ? $result : [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
+}
+
+function xlsx_target_path(string $target): string
+{
+    if (str_starts_with($target, '/xl/')) {
+        return ltrim($target, '/');
+    }
+
+    if (str_starts_with($target, 'xl/')) {
+        return $target;
+    }
+
+    $path = 'xl/' . ltrim($target, '/');
+    $parts = [];
+    foreach (explode('/', $path) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+        if ($part === '..') {
+            array_pop($parts);
+            continue;
+        }
+        $parts[] = $part;
+    }
+
+    return implode('/', $parts);
 }
 
 function xlsx_column_index(string $cellRef): int
