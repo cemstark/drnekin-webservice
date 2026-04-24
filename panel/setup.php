@@ -5,12 +5,43 @@ require_once __DIR__ . '/includes/auth.php';
 
 $error = '';
 $created = false;
+$schemaInstalled = false;
+
+function setup_ensure_schema(): bool
+{
+    try {
+        db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        return false;
+    } catch (Throwable $e) {
+        $schemaFile = __DIR__ . '/install/schema.sql';
+        if (!is_file($schemaFile)) {
+            throw new RuntimeException('Kurulum SQL dosyasi bulunamadi.');
+        }
+
+        $sql = (string)file_get_contents($schemaFile);
+        $statements = preg_split('/;\s*(?:\r?\n|$)/', $sql) ?: [];
+        foreach ($statements as $statement) {
+            $statement = trim($statement);
+            if ($statement !== '') {
+                db()->exec($statement);
+            }
+        }
+
+        db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        return true;
+    }
+}
 
 try {
+    if (!is_file(__DIR__ . '/config.php')) {
+        throw new RuntimeException('panel/config.php dosyasi bulunamadi. Once config.example.php dosyasini config.php olarak kopyalayip veritabani bilgilerini doldurun.');
+    }
+
+    $schemaInstalled = setup_ensure_schema();
     $count = (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
 } catch (Throwable $e) {
     http_response_code(500);
-    exit('Veritabani hazir degil. Once install/schema.sql dosyasini phpMyAdmin uzerinden calistirin.');
+    exit('Kurulum hazir degil: ' . e($e->getMessage()));
 }
 
 if ($count > 0) {
@@ -51,6 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <div class="brand">DRN</div>
       <h1>Ilk Kurulum</h1>
+      <?php if ($schemaInstalled): ?>
+        <div class="success">Veritabani tablolari otomatik olusturuldu.</div>
+      <?php endif; ?>
       <?php if ($created): ?>
         <div class="success">Admin kullanicisi olusturuldu. <a href="<?= e(panel_url('login.php')) ?>">Giris yapin</a>.</div>
       <?php else: ?>

@@ -13,7 +13,6 @@ Bu repo, `panel.<domain>` alt domaininde calisacak servis takip panelini ve bilg
 2. Alt domain document root olarak mumkunse `panel` klasorunu secin. Secemiyorsaniz repo kokunu yukleyin; kok `index.php` otomatik `panel/` klasorune yonlendirir.
 3. Hostinger'da MySQL veritabani olusturun.
 4. `panel/config.example.php` dosyasini `panel/config.php` olarak kopyalayip veritabani bilgilerini ve `api_key` degerini doldurun.
-5. phpMyAdmin'de `panel/install/schema.sql` dosyasini calistirin.
-6. `https://panel.<domain>/setup.php` ile ilk admin kullanicisini olusturun.
-7. `sync-agent/.env.example` dosyasini `sync-agent/.env` olarak kopyalayip Excel yolu, API URL ve API anahtarini doldurun.
-8. Bilgisayarda `sync-agent/install_windows_task.ps1` script'i ile ajanı Windows acilisinda calisacak sekilde kurun.
+5. `https://panel.<domain>/setup.php` ile ilk admin kullanicisini olusturun. Bu ekran veritabani tablolarini otomatik olusturmayi dener.
+6. `sync-agent/.env.example` dosyasini `sync-agent/.env` olarak kopyalayip Excel yolu, API URL ve API anahtarini doldurun.
+7. Bilgisayarda `sync-agent/install_windows_task.ps1` script'i ile ajanı Windows acilisinda calisacak sekilde kurun.

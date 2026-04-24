@@ -7,9 +7,8 @@ Bu klasor `panel.<domain>` subdomain'i icin hazirlanmistir. Hostinger hPanel'de 
 1. Hostinger hPanel'de MySQL veritabani olusturun.
 2. `panel/config.example.php` dosyasini `panel/config.php` olarak kopyalayin.
 3. `config.php` icindeki veritabani bilgilerini ve `api_key` degerini degistirin. `base_path` varsayilan olarak otomatik algilanir.
-4. phpMyAdmin'de `panel/install/schema.sql` dosyasini calistirin.
-5. `https://panel.<domain>/setup.php` adresinden ilk admin kullanicisini olusturun.
-6. `https://panel.<domain>/login.php` adresinden giris yapin.
+4. `https://panel.<domain>/setup.php` adresinden ilk admin kullanicisini olusturun. Bu ekran veritabani tablolarini otomatik olusturmayi dener.
+5. `https://panel.<domain>/login.php` adresinden giris yapin.
 
 ## Excel kolonlari
 
