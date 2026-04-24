@@ -18,12 +18,14 @@ function import_excel_file(string $path, string $sourceName): array
         foreach ($sheets as $sheet) {
             $rows = $sheet['rows'];
             if (count($rows) < 2) {
+                $errors[] = 'Sayfa ' . $sheet['name'] . ': veri satiri okunamadi.';
                 continue;
             }
 
             $header = array_map('header_key', array_shift($rows));
             $map = build_header_map($header);
             if (count($map) < 2) {
+                $errors[] = 'Sayfa ' . $sheet['name'] . ': basliklar taninamadi: ' . implode(' | ', array_slice($header, 0, 12));
                 continue;
             }
 

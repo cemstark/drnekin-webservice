@@ -50,12 +50,12 @@ function xlsx_parse_sheet_rows(string $sheetXml, array $sharedStrings): array
         throw new RuntimeException('Excel XML verisi okunamadi.');
     }
 
-    $sheet = $xml->children(XLSX_NS);
     $rows = [];
-    foreach ($sheet->sheetData->row as $row) {
+    $rowNodes = $xml->xpath('//*[local-name()="sheetData"]/*[local-name()="row"]') ?: [];
+    foreach ($rowNodes as $row) {
         $values = [];
-        $rowCells = $row->children(XLSX_NS);
-        foreach ($rowCells->c as $cell) {
+        $cellNodes = $row->xpath('./*[local-name()="c"]') ?: [];
+        foreach ($cellNodes as $cell) {
             $ref = (string)$cell['r'];
             $column = xlsx_column_index($ref);
             $values[$column] = xlsx_cell_value($cell, $sharedStrings);
@@ -89,20 +89,19 @@ function xlsx_shared_strings(ZipArchive $zip): array
     }
 
     $strings = [];
-    $sst = $xml->children(XLSX_NS);
-    foreach ($sst->si as $si) {
-        $item = $si->children(XLSX_NS);
-        if (isset($item->t)) {
-            $strings[] = (string)$item->t;
+    $items = $xml->xpath('//*[local-name()="si"]') ?: [];
+    foreach ($items as $si) {
+        $texts = $si->xpath('.//*[local-name()="t"]') ?: [];
+        if ($texts !== []) {
+            $text = '';
+            foreach ($texts as $node) {
+                $text .= (string)$node;
+            }
+            $strings[] = $text;
             continue;
         }
 
-        $text = '';
-        foreach ($item->r as $run) {
-            $runChildren = $run->children(XLSX_NS);
-            $text .= (string)$runChildren->t;
-        }
-        $strings[] = $text;
+        $strings[] = '';
     }
 
     return $strings;
@@ -170,15 +169,16 @@ function xlsx_column_index(string $cellRef): int
 function xlsx_cell_value(SimpleXMLElement $cell, array $sharedStrings): string
 {
     $type = (string)$cell['t'];
-    $value = $cell->children(XLSX_NS);
+    $values = $cell->xpath('./*[local-name()="v"]') ?: [];
+    $inline = $cell->xpath('.//*[local-name()="t"]') ?: [];
     if ($type === 's') {
-        $index = (int)($value->v ?? -1);
+        $index = isset($values[0]) ? (int)$values[0] : -1;
         return trim((string)($sharedStrings[$index] ?? ''));
     }
 
     if ($type === 'inlineStr') {
-        return trim((string)($value->is->t ?? ''));
+        return isset($inline[0]) ? trim((string)$inline[0]) : '';
     }
 
-    return trim((string)($value->v ?? ''));
+    return isset($values[0]) ? trim((string)$values[0]) : '';
 }
