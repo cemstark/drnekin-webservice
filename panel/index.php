@@ -57,6 +57,7 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
     </div>
     <nav>
       <span><?= e(current_user()['full_name'] ?: current_user()['username']) ?></span>
+      <a href="<?= e(panel_url('import.php')) ?>">Excel yukle</a>
       <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
     </nav>
   </header>

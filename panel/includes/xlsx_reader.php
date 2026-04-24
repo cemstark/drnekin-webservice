@@ -5,6 +5,12 @@ const XLSX_NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
 
 function xlsx_read_first_sheet(string $path): array
 {
+    $sheets = xlsx_read_sheets($path);
+    return $sheets[0]['rows'] ?? [];
+}
+
+function xlsx_read_sheets(string $path): array
+{
     if (!class_exists('ZipArchive')) {
         throw new RuntimeException('Sunucuda ZipArchive PHP eklentisi aktif degil.');
     }
@@ -15,14 +21,30 @@ function xlsx_read_first_sheet(string $path): array
     }
 
     $sharedStrings = xlsx_shared_strings($zip);
-    $sheetPath = xlsx_first_sheet_path($zip);
-    $sheetXml = $zip->getFromName($sheetPath);
+    $sheetPaths = xlsx_sheet_paths($zip);
+    $sheets = [];
+    foreach ($sheetPaths as $sheet) {
+        $sheetXml = $zip->getFromName($sheet['path']);
+        if ($sheetXml === false) {
+            continue;
+        }
+
+        $sheets[] = [
+            'name' => $sheet['name'],
+            'rows' => xlsx_parse_sheet_rows($sheetXml, $sharedStrings),
+        ];
+    }
     $zip->close();
 
-    if ($sheetXml === false) {
+    if ($sheets === []) {
         throw new RuntimeException('Excel sayfasi okunamadi.');
     }
 
+    return $sheets;
+}
+
+function xlsx_parse_sheet_rows(string $sheetXml, array $sharedStrings): array
+{
     $xml = simplexml_load_string($sheetXml);
     if (!$xml) {
         throw new RuntimeException('Excel XML verisi okunamadi.');
@@ -86,41 +108,52 @@ function xlsx_shared_strings(ZipArchive $zip): array
     return $strings;
 }
 
-function xlsx_first_sheet_path(ZipArchive $zip): string
+function xlsx_sheet_paths(ZipArchive $zip): array
 {
     $workbook = $zip->getFromName('xl/workbook.xml');
     $rels = $zip->getFromName('xl/_rels/workbook.xml.rels');
     if ($workbook === false || $rels === false) {
-        return 'xl/worksheets/sheet1.xml';
+        return [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
     }
 
     $workbookXml = simplexml_load_string($workbook);
     $relsXml = simplexml_load_string($rels);
     if (!$workbookXml || !$relsXml) {
-        return 'xl/worksheets/sheet1.xml';
+        return [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
     }
 
     $workbookXml->registerXPathNamespace('main', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
     $workbookXml->registerXPathNamespace('r', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships');
     $sheets = $workbookXml->xpath('//main:sheet');
     if (!$sheets || !isset($sheets[0])) {
-        return 'xl/worksheets/sheet1.xml';
+        return [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
     }
 
-    $attrs = $sheets[0]->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships');
-    $relId = (string)($attrs['id'] ?? '');
+    $pathsByRel = [];
     $relationships = $relsXml->children('http://schemas.openxmlformats.org/package/2006/relationships');
     foreach ($relationships->Relationship as $rel) {
-        if ((string)$rel['Id'] === $relId) {
-            $target = (string)$rel['Target'];
-            if (str_starts_with($target, '/xl/')) {
-                return ltrim($target, '/');
-            }
-            return str_starts_with($target, 'xl/') ? $target : 'xl/' . ltrim($target, '/');
+        $target = (string)$rel['Target'];
+        if (str_starts_with($target, '/xl/')) {
+            $path = ltrim($target, '/');
+        } else {
+            $path = str_starts_with($target, 'xl/') ? $target : 'xl/' . ltrim($target, '/');
+        }
+        $pathsByRel[(string)$rel['Id']] = $path;
+    }
+
+    $result = [];
+    foreach ($sheets as $sheet) {
+        $attrs = $sheet->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships');
+        $relId = (string)($attrs['id'] ?? '');
+        if (isset($pathsByRel[$relId])) {
+            $result[] = [
+                'name' => (string)($sheet['name'] ?? 'Sheet'),
+                'path' => $pathsByRel[$relId],
+            ];
         }
     }
 
-    return 'xl/worksheets/sheet1.xml';
+    return $result !== [] ? $result : [['name' => 'Sheet1', 'path' => 'xl/worksheets/sheet1.xml']];
 }
 
 function xlsx_column_index(string $cellRef): int

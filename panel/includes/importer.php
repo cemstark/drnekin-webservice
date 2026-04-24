@@ -7,64 +7,81 @@ require_once __DIR__ . '/xlsx_reader.php';
 function import_excel_file(string $path, string $sourceName): array
 {
     $started = microtime(true);
-    $rows = xlsx_read_first_sheet($path);
-    if (count($rows) < 2) {
-        return import_log_result($sourceName, 0, 0, ['Excel dosyasinda veri satiri bulunamadi.'], $started);
-    }
-
-    $header = array_map('header_key', array_shift($rows));
-    $map = build_header_map($header);
-    $required = ['record_no', 'plate', 'customer_name', 'service_entry_date'];
+    $sheets = xlsx_read_sheets($path);
     $errors = [];
-
-    foreach ($required as $field) {
-        if (!array_key_exists($field, $map)) {
-            $errors[] = required_label($field) . ' kolonu bulunamadi.';
-        }
-    }
-
-    if ($errors !== []) {
-        return import_log_result($sourceName, 0, 0, $errors, $started);
-    }
-
     $imported = 0;
     $skipped = 0;
     $pdo = db();
     $pdo->beginTransaction();
 
     try {
-        foreach ($rows as $rowIndex => $row) {
-            $line = $rowIndex + 2;
-            if (row_is_empty($row)) {
+        foreach ($sheets as $sheet) {
+            $rows = $sheet['rows'];
+            if (count($rows) < 2) {
                 continue;
             }
 
-            $record = [
-                'record_no' => cell($row, $map, 'record_no'),
-                'plate' => normalize_plate(cell($row, $map, 'plate')),
-                'customer_name' => cell($row, $map, 'customer_name'),
-                'insurance_company' => cell($row, $map, 'insurance_company'),
-                'repair_status' => cell($row, $map, 'repair_status') ?: 'Belirtilmedi',
-                'mini_repair_part' => cell($row, $map, 'mini_repair_part'),
-                'service_entry_date' => normalize_date(cell($row, $map, 'service_entry_date')),
-                'service_exit_date' => normalize_date(cell($row, $map, 'service_exit_date')),
-            ];
-
-            $hasMini = parse_bool(cell($row, $map, 'mini_repair_has'));
-            if ($record['mini_repair_part'] !== '') {
-                $hasMini = true;
-            }
-            $record['mini_repair_has'] = $hasMini ? 1 : 0;
-
-            $rowErrors = validate_record($record);
-            if ($rowErrors !== []) {
-                $skipped++;
-                $errors[] = 'Satir ' . $line . ': ' . implode(', ', $rowErrors);
+            $header = array_map('header_key', array_shift($rows));
+            $map = build_header_map($header);
+            if (count($map) < 2) {
                 continue;
             }
 
-            upsert_service_record($pdo, $record);
-            $imported++;
+            $missing = [];
+            foreach (['plate', 'customer_name', 'service_entry_date'] as $field) {
+                if (!array_key_exists($field, $map)) {
+                    $missing[] = required_label($field);
+                }
+            }
+            if ($missing !== []) {
+                $errors[] = 'Sayfa ' . $sheet['name'] . ': eksik kolonlar: ' . implode(', ', $missing);
+                continue;
+            }
+
+            foreach ($rows as $rowIndex => $row) {
+                $line = $rowIndex + 2;
+                if (row_is_empty($row)) {
+                    continue;
+                }
+
+                $entryDate = normalize_date(cell($row, $map, 'service_entry_date'));
+                $record = [
+                    'record_no' => cell($row, $map, 'record_no'),
+                    'plate' => normalize_plate(cell($row, $map, 'plate')),
+                    'customer_name' => cell($row, $map, 'customer_name'),
+                    'insurance_company' => cell($row, $map, 'insurance_company'),
+                    'repair_status' => cell($row, $map, 'repair_status') ?: 'Belirtilmedi',
+                    'mini_repair_part' => cell($row, $map, 'mini_repair_part'),
+                    'service_entry_date' => $entryDate,
+                    'service_exit_date' => normalize_date(cell($row, $map, 'service_exit_date')),
+                ];
+
+                if ($record['record_no'] === '') {
+                    $record['record_no'] = generated_record_no(
+                        $sheet['name'],
+                        $record['plate'],
+                        $entryDate,
+                        cell($row, $map, 'file_no'),
+                        $line
+                    );
+                }
+
+                $hasMini = parse_bool(cell($row, $map, 'mini_repair_has'));
+                if ($record['mini_repair_part'] !== '') {
+                    $hasMini = true;
+                }
+                $record['mini_repair_has'] = $hasMini ? 1 : 0;
+
+                $rowErrors = validate_record($record);
+                if ($rowErrors !== []) {
+                    $skipped++;
+                    $errors[] = 'Sayfa ' . $sheet['name'] . ' satir ' . $line . ': ' . implode(', ', $rowErrors);
+                    continue;
+                }
+
+                upsert_service_record($pdo, $record);
+                $imported++;
+            }
         }
 
         $pdo->commit();
@@ -73,21 +90,26 @@ function import_excel_file(string $path, string $sourceName): array
         throw $e;
     }
 
+    if ($imported === 0 && $errors === []) {
+        $errors[] = 'Excel dosyasinda aktarilabilir veri bulunamadi.';
+    }
+
     return import_log_result($sourceName, $imported, $skipped, $errors, $started);
 }
 
 function build_header_map(array $headers): array
 {
     $aliases = [
-        'record_no' => ['kayit no', 'kayit numarasi', 'kayit', 'record no', 'kayıt no', 'kayıt numarası'],
-        'plate' => ['plaka', 'arac plakasi', 'araç plakası', 'arac plaka', 'araç plaka'],
-        'customer_name' => ['ad soyad', 'isim soyisim', 'kullanici isim soyisim', 'kullanıcı isim soyisim', 'musteri', 'müşteri', 'musteri ad soyad', 'müşteri ad soyad'],
-        'insurance_company' => ['sigorta sirketi', 'sigorta şirketi', 'sigorta'],
-        'repair_status' => ['tamir durumu', 'guncel durum', 'güncel durum', 'servisteki guncel durum', 'servisteki güncel durum'],
-        'mini_repair_has' => ['mini onarim', 'mini onarım', 'mini onarim var mi', 'mini onarım var mı'],
-        'mini_repair_part' => ['mini onarim parca', 'mini onarım parça', 'hangi parca', 'hangi parça', 'parca', 'parça'],
-        'service_entry_date' => ['giris tarihi', 'giriş tarihi', 'servise giris tarihi', 'servise giriş tarihi'],
-        'service_exit_date' => ['cikis tarihi', 'çıkış tarihi', 'servisten cikis tarihi', 'servisten çıkış tarihi'],
+        'record_no' => ['kayit no', 'kayit numarasi', 'record no'],
+        'plate' => ['plaka', 'arac plakasi', 'arac plaka'],
+        'customer_name' => ['ad soyad', 'adi soyadi', 'isim soyisim', 'kullanici isim soyisim', 'musteri', 'musteri ad soyad'],
+        'insurance_company' => ['sigorta sirketi', 'sigorta', 'si gorta'],
+        'repair_status' => ['tamir durumu', 'guncel durum', 'servisteki guncel durum', 'durum'],
+        'mini_repair_has' => ['mini onarim', 'mini onarim var mi'],
+        'mini_repair_part' => ['mini onarim parca', 'hangi parca', 'parca', 'prc'],
+        'service_entry_date' => ['giris tarihi', 'servise giris tarihi', 'ser giris', 'ser gi ri'],
+        'service_exit_date' => ['cikis tarihi', 'servisten cikis tarihi', 'tes tarihi', 'tes tari hi'],
+        'file_no' => ['dosya no', 'dosya numarasi'],
     ];
 
     $map = [];
@@ -104,8 +126,13 @@ function build_header_map(array $headers): array
 
 function header_key(mixed $value): string
 {
-    $value = function_exists('mb_strtolower') ? mb_strtolower(trim((string)$value), 'UTF-8') : strtolower(trim((string)$value));
-    $value = str_replace(['ı', 'ğ', 'ü', 'ş', 'ö', 'ç', 'İ'], ['i', 'g', 'u', 's', 'o', 'c', 'i'], $value);
+    $value = trim((string)$value);
+    $value = strtr($value, [
+        'İ' => 'i', 'I' => 'i', 'ı' => 'i', 'Ğ' => 'g', 'ğ' => 'g',
+        'Ü' => 'u', 'ü' => 'u', 'Ş' => 's', 'ş' => 's', 'Ö' => 'o',
+        'ö' => 'o', 'Ç' => 'c', 'ç' => 'c',
+    ]);
+    $value = function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
     $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? $value;
     return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
 }
@@ -141,9 +168,21 @@ function normalize_date(string $value): ?string
         return null;
     }
 
+    $value = preg_replace('/\.+/', '.', $value) ?? $value;
+    $value = strtr($value, ['O' => '0', 'o' => '0']);
+    if (preg_match('/^(\d{2})(\d{2})(\d{4})$/', $value, $matches)) {
+        return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+    }
+    if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(206)$/', $value, $matches)) {
+        return '2026-' . str_pad($matches[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+    }
+
     if (is_numeric($value)) {
         $days = (int)floor((float)$value);
-        return (new DateTimeImmutable('1899-12-30'))->modify('+' . $days . ' days')->format('Y-m-d');
+        if ($days > 25000 && $days < 90000) {
+            return (new DateTimeImmutable('1899-12-30'))->modify('+' . $days . ' days')->format('Y-m-d');
+        }
+        return null;
     }
 
     $formats = ['Y-m-d', 'd.m.Y', 'd/m/Y', 'd-m-Y', 'm/d/Y'];
@@ -162,6 +201,17 @@ function parse_bool(string $value): bool
 {
     $value = header_key($value);
     return in_array($value, ['1', 'evet', 'var', 'true', 'yes', 'mini onarim'], true);
+}
+
+function generated_record_no(string $sheetName, string $plate, ?string $entryDate, string $fileNo, int $line): string
+{
+    $parts = [
+        header_key($sheetName),
+        header_key($plate),
+        $entryDate ?: 'tarihsiz',
+        $fileNo !== '' ? header_key($fileNo) : 'satir-' . $line,
+    ];
+    return substr(implode('-', array_filter($parts)), 0, 80);
 }
 
 function validate_record(array $record): array

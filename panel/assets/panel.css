@@ -52,6 +52,10 @@ a { color: var(--accent-dark); text-decoration: none; }
   margin: 24px auto 48px;
 }
 
+.layout.narrow {
+  width: min(720px, calc(100% - 32px));
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -194,6 +198,26 @@ th {
   color: var(--muted);
 }
 
+.form-card {
+  padding: 20px;
+}
+
+.form-card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.form-card form {
+  display: grid;
+  gap: 14px;
+}
+
+.form-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
 .login-card button {
   width: 100%;
   margin-top: 20px;
@@ -215,6 +239,16 @@ th {
   border: 1px solid #abefc6;
   background: #f6fef9;
   color: #067647;
+}
+
+.error-list {
+  overflow: auto;
+  max-height: 260px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fafc;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 900px) {
