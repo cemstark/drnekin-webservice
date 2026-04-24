@@ -1,7 +1,0 @@
-panel/config.php
-panel/storage/
-sync-agent/.env
-sync-agent/sync-agent.log
-sync-agent.log
-__pycache__/
-*.pyc
