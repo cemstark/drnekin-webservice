@@ -166,6 +166,10 @@ def build_header_map(headers: list) -> dict:
 
 
 def generated_record_no(sheet_name: str, plate: str, entry_date: str | None, file_no: str, line: int) -> str:
+    file_no = str(file_no or "").strip()
+    if file_no.startswith("manual-"):
+        return file_no[:80]
+
     parts = [
         header_key(sheet_name),
         header_key(plate),
@@ -173,6 +177,27 @@ def generated_record_no(sheet_name: str, plate: str, entry_date: str | None, fil
         header_key(file_no) if file_no else f"satir-{line}",
     ]
     return "-".join([part for part in parts if part])[:80]
+
+
+def turkish_month_sheet(value: str | None) -> str:
+    names = {
+        "01": "OCAK", "02": "ŞUBAT", "03": "MART", "04": "NİSAN",
+        "05": "MAYIS", "06": "HAZİRAN", "07": "TEMMUZ", "08": "AĞUSTOS",
+        "09": "EYLÜL", "10": "EKİM", "11": "KASIM", "12": "ARALIK",
+    }
+    if not value or not re.match(r"^\d{4}-\d{2}", value):
+        return datetime.now().strftime("%m %Y")
+    year, month = value[:4], value[5:7]
+    return f"{names.get(month, month)} {year}"
+
+
+def default_headers() -> list[str]:
+    return [
+        "PLAKA", "SER GİRİŞ", "MÜŞ/TÜR", "ADI SOYADI", "MÜŞTERİ TEL",
+        "MARKA", "SİGORTA", "KAS/TRF", "DOSYA NO", "EKSPER",
+        "TEKNİSYEN", "DURUM", "ALAN", "FİN", "PRC", "ACIKLAMA",
+        "TES.TARİHİ",
+    ]
 
 
 def set_excel_cell(ws, row: int, column: int | None, value) -> None:
@@ -213,6 +238,82 @@ def com_set_cell(ws, row: int, column: int | None, value) -> None:
     ws.Cells(row, column).Value = "" if value is None else value
 
 
+def com_sheet_by_name(workbook, name: str):
+    wanted = header_key(name)
+    for index in range(1, workbook.Worksheets.Count + 1):
+        sheet = workbook.Worksheets(index)
+        if header_key(sheet.Name) == wanted:
+            return sheet
+    return None
+
+
+def ensure_com_sheet(workbook, sheet_name: str):
+    sheet = com_sheet_by_name(workbook, sheet_name)
+    if sheet is None:
+        sheet = workbook.Worksheets.Add(After=workbook.Worksheets(workbook.Worksheets.Count))
+        sheet.Name = sheet_name
+        for column, header in enumerate(default_headers(), start=1):
+            sheet.Cells(1, column).Value = header
+    return sheet
+
+
+def com_append_update(workbook, update: dict) -> None:
+    fields = update.get("fields") or {}
+    sheet = ensure_com_sheet(workbook, turkish_month_sheet(fields.get("service_entry_date")))
+    headers = [com_cell_value(sheet, 1, col) for col in range(1, sheet.UsedRange.Columns.Count + 1)]
+    mapping = build_header_map(headers)
+    if not {"plate", "customer_name", "service_entry_date"}.issubset(mapping):
+        raise RuntimeError("Excel sheet headers are not compatible for append")
+
+    row = int(sheet.Cells(sheet.Rows.Count, mapping["plate"]).End(-4162).Row) + 1
+    com_set_cell(sheet, row, mapping.get("plate"), fields.get("plate"))
+    com_set_cell(sheet, row, mapping.get("service_entry_date"), fields.get("service_entry_date"))
+    com_set_cell(sheet, row, mapping.get("customer_name"), fields.get("customer_name"))
+    com_set_cell(sheet, row, mapping.get("insurance_company"), fields.get("insurance_company"))
+    com_set_cell(sheet, row, mapping.get("file_no"), update.get("record_no"))
+    com_set_cell(sheet, row, mapping.get("repair_status"), fields.get("repair_status"))
+    com_set_cell(sheet, row, mapping.get("mini_repair_part"), fields.get("mini_repair_part") if fields.get("mini_repair_has") else "")
+    com_set_cell(sheet, row, mapping.get("service_exit_date"), fields.get("service_exit_date") or "")
+
+
+def workbook_sheet_by_name(wb, name: str):
+    wanted = header_key(name)
+    for sheet in wb.worksheets:
+        if header_key(sheet.title) == wanted:
+            return sheet
+    return None
+
+
+def ensure_workbook_sheet(wb, sheet_name: str):
+    sheet = workbook_sheet_by_name(wb, sheet_name)
+    if sheet is None:
+        sheet = wb.create_sheet(sheet_name)
+        sheet.append(default_headers())
+    return sheet
+
+
+def append_update_to_workbook(wb, update: dict) -> None:
+    fields = update.get("fields") or {}
+    sheet = ensure_workbook_sheet(wb, turkish_month_sheet(fields.get("service_entry_date")))
+    headers = [cell.value for cell in sheet[1]]
+    mapping = build_header_map(headers)
+    if not {"plate", "customer_name", "service_entry_date"}.issubset(mapping):
+        raise RuntimeError("Excel sheet headers are not compatible for append")
+
+    row = sheet.max_row + 1
+    while row > 2 and not any(sheet.cell(row=row - 1, column=col).value for col in range(1, sheet.max_column + 1)):
+        row -= 1
+
+    set_excel_cell(sheet, row, mapping.get("plate"), fields.get("plate"))
+    set_excel_cell(sheet, row, mapping.get("service_entry_date"), fields.get("service_entry_date"))
+    set_excel_cell(sheet, row, mapping.get("customer_name"), fields.get("customer_name"))
+    set_excel_cell(sheet, row, mapping.get("insurance_company"), fields.get("insurance_company"))
+    set_excel_cell(sheet, row, mapping.get("file_no"), update.get("record_no"))
+    set_excel_cell(sheet, row, mapping.get("repair_status"), fields.get("repair_status"))
+    set_excel_cell(sheet, row, mapping.get("mini_repair_part"), fields.get("mini_repair_part") if fields.get("mini_repair_has") else "")
+    set_excel_cell(sheet, row, mapping.get("service_exit_date"), fields.get("service_exit_date") or "")
+
+
 def apply_updates_to_open_workbook(excel_path: Path, updates: list) -> tuple[list, list] | None:
     workbook = workbook_is_open_in_excel(excel_path)
     if workbook is None:
@@ -247,7 +348,14 @@ def apply_updates_to_open_workbook(excel_path: Path, updates: list) -> tuple[lis
         fields = update.get("fields") or {}
         target = row_index.get(record_no)
         if not target:
-            failed.append({"id": update_id, "error": f"Excel row not found for {record_no}"})
+            if fields.get("_action") == "append":
+                try:
+                    com_append_update(workbook, update)
+                    applied.append(update_id)
+                except Exception as exc:
+                    failed.append({"id": update_id, "error": str(exc)})
+            else:
+                failed.append({"id": update_id, "error": f"Excel row not found for {record_no}"})
             continue
 
         ws, row, mapping = target
@@ -328,7 +436,14 @@ def apply_pending_updates(excel_path: Path, updates_url: str, api_key: str) -> i
         fields = update.get("fields") or {}
         target = row_index.get(record_no)
         if not target:
-            failed.append({"id": update_id, "error": f"Excel row not found for {record_no}"})
+            if fields.get("_action") == "append":
+                try:
+                    append_update_to_workbook(wb, update)
+                    applied.append(update_id)
+                except Exception as exc:
+                    failed.append({"id": update_id, "error": str(exc)})
+            else:
+                failed.append({"id": update_id, "error": f"Excel row not found for {record_no}"})
             continue
 
         ws, row, mapping = target

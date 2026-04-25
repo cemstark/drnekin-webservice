@@ -1,24 +1,26 @@
 :root {
-  --bg: #f5f7fb;
+  --bg: #f6f8fb;
   --surface: #ffffff;
   --text: #172033;
   --muted: #667085;
-  --line: #d9e0ea;
-  --accent: #0f766e;
-  --accent-dark: #115e59;
+  --line: #e2e8f0;
+  --soft: #f1f5f9;
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
   --warn: #b42318;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .05);
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, Arial, Helvetica, sans-serif;
   color: var(--text);
   background: var(--bg);
 }
 
-a { color: var(--accent-dark); text-decoration: none; }
+a { color: var(--accent-dark); text-decoration: none; font-weight: 600; }
 
 .topbar {
   display: flex;
@@ -27,6 +29,10 @@ a { color: var(--accent-dark); text-decoration: none; }
   padding: 20px 28px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .topbar h1, .login-card h1 {
@@ -43,8 +49,18 @@ a { color: var(--accent-dark); text-decoration: none; }
 .topbar nav {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   color: var(--muted);
+}
+
+.topbar nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
 }
 
 .layout {
@@ -63,10 +79,11 @@ a { color: var(--accent-dark); text-decoration: none; }
   margin-bottom: 16px;
 }
 
-.metrics div, .filters, .table-card, .login-card {
+.metrics div, .filters, .table-card, .login-card, .insurance-tabs {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+  box-shadow: var(--shadow);
 }
 
 .metrics div {
@@ -86,10 +103,43 @@ a { color: var(--accent-dark); text-decoration: none; }
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 1fr)) auto auto;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(140px, 1fr)) auto auto;
   gap: 10px;
   padding: 12px;
   margin-bottom: 16px;
+}
+
+.insurance-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 10px;
+  margin-bottom: 16px;
+}
+
+.insurance-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  white-space: nowrap;
+  background: #fff;
+}
+
+.insurance-tabs a.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: var(--accent-dark);
+}
+
+.insurance-tabs span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 input, select, button {
@@ -101,12 +151,21 @@ input, select, button {
   background: #fff;
 }
 
+input:focus, select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: var(--accent);
+}
+
 button {
   border-color: var(--accent);
   background: var(--accent);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-dark);
 }
 
 .ghost {
@@ -118,6 +177,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--text);
+  font-weight: 600;
+  background: #fff;
 }
 
 .table-card {
@@ -148,7 +209,7 @@ table {
 }
 
 th, td {
-  padding: 12px 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
@@ -158,6 +219,11 @@ th {
   font-size: 12px;
   color: var(--muted);
   text-transform: uppercase;
+  background: #f8fafc;
+}
+
+tbody tr:hover {
+  background: #f8fafc;
 }
 
 .pill {
@@ -167,7 +233,7 @@ th {
   padding: 0 9px;
   border-radius: 999px;
   background: #e6f4f1;
-  color: var(--accent-dark);
+  color: #047857;
   font-size: 13px;
 }
 

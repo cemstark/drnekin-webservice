@@ -219,6 +219,11 @@ function parse_bool(string $value): bool
 
 function generated_record_no(string $sheetName, string $plate, ?string $entryDate, string $fileNo, int $line): string
 {
+    $fileNo = trim($fileNo);
+    if (str_starts_with($fileNo, 'manual-')) {
+        return substr($fileNo, 0, 80);
+    }
+
     $parts = [
         header_key($sheetName),
         header_key($plate),
