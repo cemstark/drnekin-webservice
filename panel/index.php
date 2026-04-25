@@ -76,6 +76,7 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= e(panel_config('app_name')) ?></title>
   <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   <header class="topbar">
@@ -91,30 +92,55 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
     </nav>
   </header>
 
-  <main class="layout">
-    <section class="metrics">
-      <div><strong><?= e((int)($summary['total'] ?? 0)) ?></strong><span>Toplam arac sayisi</span></div>
-      <div><strong><?= e((int)($summary['open_count'] ?? 0)) ?></strong><span>Serviste</span></div>
-      <div><strong><?= e((int)($summary['mini_count'] ?? 0)) ?></strong><span>Mini onarim</span></div>
-      <div><strong><?= e($lastImport['created_at'] ?? '-') ?></strong><span>Son senkron</span></div>
+  <main class="mx-auto w-full max-w-[1420px] px-4 py-6 sm:px-6 lg:px-8">
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Toplam arac sayisi</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['total'] ?? 0)) ?></strong>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Serviste</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['open_count'] ?? 0)) ?></strong>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mini onarim</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['mini_count'] ?? 0)) ?></strong>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Son senkron</span>
+        <strong class="mt-2 block text-xl font-bold text-slate-950"><?= e($lastImport['created_at'] ?? '-') ?></strong>
+      </div>
     </section>
 
-    <section class="insurance-tabs" aria-label="Sigorta filtreleri">
-      <a class="<?= $insurance === '' ? 'active' : '' ?>" href="<?= e(index_url(['insurance' => null])) ?>">Tum sigortalar</a>
+    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Sigorta filtreleri">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-950">Sigorta filtreleri</h2>
+          <p class="text-xs text-slate-500">Sigorta sirketine gore hizli filtrele</p>
+        </div>
+        <?php if ($insurance !== ''): ?>
+          <a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['insurance' => null])) ?>">Filtreyi kaldir</a>
+        <?php endif; ?>
+      </div>
+      <div class="flex flex-wrap gap-2">
+      <a class="<?= $insurance === '' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => null])) ?>">
+        Tum sigortalar
+      </a>
       <?php foreach ($insurances as $item): ?>
-        <a class="<?= $insurance === $item['insurance_company'] ? 'active' : '' ?>" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
+        <a class="<?= $insurance === $item['insurance_company'] ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
           <?= e($item['insurance_company']) ?>
-          <span><?= e($item['total']) ?></span>
+          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"><?= e($item['total']) ?></span>
         </a>
       <?php endforeach; ?>
+      </div>
     </section>
 
-    <form class="filters" method="get">
+    <form class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto_auto]" method="get">
       <?php if ($insurance !== ''): ?>
         <input type="hidden" name="insurance" value="<?= e($insurance) ?>">
       <?php endif; ?>
-      <input name="q" value="<?= e($q) ?>" placeholder="Plaka veya isim ara">
-      <select name="month">
+      <input class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="q" value="<?= e($q) ?>" placeholder="Plaka veya isim ara">
+      <select class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="month">
         <option value="">Tum aylar</option>
         <?php foreach ($months as $item): ?>
           <option value="<?= e($item['service_month']) ?>" <?= $month === $item['service_month'] ? 'selected' : '' ?>>
@@ -122,17 +148,17 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
           </option>
         <?php endforeach; ?>
       </select>
-      <select name="status">
+      <select class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="status">
         <option value="">Tum durumlar</option>
         <?php foreach ($statuses as $item): ?>
           <option value="<?= e($item) ?>" <?= $status === $item ? 'selected' : '' ?>><?= e($item) ?></option>
         <?php endforeach; ?>
       </select>
-      <button type="submit">Filtrele</button>
-      <a class="ghost" href="<?= e(panel_url('index.php')) ?>">Temizle</a>
+      <button class="h-11 rounded-lg bg-blue-600 px-6 text-sm font-bold text-white transition hover:bg-blue-700" type="submit">Filtrele</button>
+      <a class="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" href="<?= e(panel_url('index.php')) ?>">Temizle</a>
     </form>
 
-    <section class="table-card">
+    <section class="table-card mt-4">
       <div class="table-head">
         <h2>Arac kayitlari</h2>
         <span><?= count($records) ?> kayit gosteriliyor</span>

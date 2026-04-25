@@ -99,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arac Ekle - <?= e(panel_config('app_name')) ?></title>
   <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   <header class="topbar">
@@ -112,27 +113,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </nav>
   </header>
 
-  <main class="layout narrow">
-    <section class="table-card form-card">
-      <h2>Yeni arac bilgisi</h2>
+  <main class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 bg-slate-50 px-6 py-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Manuel kayit</p>
+        <h2 class="mt-1 text-xl font-bold text-slate-950">Yeni arac bilgisi</h2>
+      </div>
+      <div class="px-6 py-6">
       <?php if ($created): ?>
-        <div class="success">Arac eklendi. Excel'e yeni satir olarak yazilmak uzere kuyruga alindi.</div>
+        <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">Arac eklendi. Excel'e yeni satir olarak yazilmak uzere kuyruga alindi.</div>
       <?php endif; ?>
       <?php if ($error !== ''): ?>
-        <div class="alert"><?= e($error) ?></div>
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"><?= e($error) ?></div>
       <?php endif; ?>
-      <form method="post">
+      <form class="grid gap-5 md:grid-cols-2" method="post">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <label>Plaka <input name="plate" value="<?= e($fields['plate']) ?>" required></label>
-        <label>Ad Soyad <input name="customer_name" value="<?= e($fields['customer_name']) ?>" required></label>
-        <label>Sigorta <input name="insurance_company" value="<?= e($fields['insurance_company']) ?>"></label>
-        <label>Tamir Durumu <input name="repair_status" value="<?= e($fields['repair_status']) ?>"></label>
-        <label class="check-row"><input type="checkbox" name="mini_repair_has" <?= (int)$fields['mini_repair_has'] === 1 ? 'checked' : '' ?>> Mini onarim var</label>
-        <label>Mini Onarim Parca <input name="mini_repair_part" value="<?= e($fields['mini_repair_part']) ?>"></label>
-        <label>Giris Tarihi <input type="date" name="service_entry_date" value="<?= e($fields['service_entry_date']) ?>" required></label>
-        <label>Cikis Tarihi <input type="date" name="service_exit_date" value="<?= e($fields['service_exit_date']) ?>"></label>
-        <button type="submit">Araci ekle</button>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Plaka
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="plate" value="<?= e($fields['plate']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Ad Soyad
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="customer_name" value="<?= e($fields['customer_name']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Sigorta
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="insurance_company" value="<?= e($fields['insurance_company']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Tamir Durumu
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="repair_status" value="<?= e($fields['repair_status']) ?>">
+        </label>
+        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
+          <input class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" type="checkbox" name="mini_repair_has" <?= (int)$fields['mini_repair_has'] === 1 ? 'checked' : '' ?>>
+          Mini onarim var
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Mini Onarim Parca
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="mini_repair_part" value="<?= e($fields['mini_repair_part']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Giris Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="service_entry_date" value="<?= e($fields['service_entry_date']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Cikis Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="service_exit_date" value="<?= e($fields['service_exit_date']) ?>">
+        </label>
+        <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
+          <a class="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" href="<?= e(panel_url('index.php')) ?>">Vazgec</a>
+          <button class="inline-flex h-11 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-bold text-white transition hover:bg-blue-700" type="submit">Araci ekle</button>
+        </div>
       </form>
+      </div>
     </section>
   </main>
 </body>
