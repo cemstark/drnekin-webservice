@@ -55,6 +55,10 @@ $sql .= ' ORDER BY category, uploaded_at DESC, id DESC';
 $q = $pdo->prepare($sql);
 $q->execute($params);
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 $tmp = tempnam(sys_get_temp_dir(), 'drn_zip_');
 if ($tmp === false) {
     http_response_code(500);
@@ -72,12 +76,6 @@ $used = [];
 $count = 0;
 
 while ($att = $q->fetch()) {
-    try {
-        $data = attachment_data_for_row($att);
-    } catch (Throwable $e) {
-        continue;
-    }
-    $count++;
     $name = (string)$att['original_name'];
     $name = preg_replace('/[\\\\\/:*?"<>|]+/u', '_', $name) ?: 'dosya';
     $folder = attachment_category_label($att['category']);
@@ -97,7 +95,23 @@ while ($att = $q->fetch()) {
     }
     $used[$entry] = true;
 
-    $zip->addFromString($entry, (string)$data);
+    $path = attachment_absolute_path($att['file_path'] ?? null);
+    if ($path !== null && is_file($path)) {
+        if ($zip->addFile($path, $entry)) {
+            $count++;
+        }
+        continue;
+    }
+
+    try {
+        $data = attachment_data_for_row($att);
+    } catch (Throwable $e) {
+        continue;
+    }
+
+    if ($zip->addFromString($entry, (string)$data)) {
+        $count++;
+    }
 }
 
 if ($count === 0) {

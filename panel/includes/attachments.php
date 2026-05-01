@@ -289,6 +289,117 @@ function attachment_send_response_headers(array $row, int $length, bool $forceDo
     }
 }
 
+function attachment_thumbnail_supported(string $mime): bool
+{
+    return match ($mime) {
+        'image/jpeg' => function_exists('imagecreatefromjpeg'),
+        'image/png' => function_exists('imagecreatefrompng'),
+        'image/webp' => function_exists('imagecreatefromwebp'),
+        default => false,
+    };
+}
+
+function attachment_thumbnail_cache_path(int $attachmentId, string $sourcePath, int $maxSize): string
+{
+    $dir = attachment_storage_root() . '/attachment_thumbs';
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Onizleme klasoru olusturulamadi.');
+    }
+
+    $deny = $dir . '/.htaccess';
+    if (!is_file($deny)) {
+        @file_put_contents($deny, "Require all denied\n");
+    }
+
+    $stamp = (string)(filemtime($sourcePath) ?: time());
+    return $dir . '/' . $attachmentId . '-' . $maxSize . '-' . $stamp . '.jpg';
+}
+
+function attachment_create_thumbnail(string $sourcePath, string $mime, string $targetPath, int $maxSize): bool
+{
+    $create = match ($mime) {
+        'image/jpeg' => 'imagecreatefromjpeg',
+        'image/png' => 'imagecreatefrompng',
+        'image/webp' => 'imagecreatefromwebp',
+        default => null,
+    };
+    if ($create === null || !function_exists($create)) {
+        return false;
+    }
+
+    $source = @$create($sourcePath);
+    if (!$source) {
+        return false;
+    }
+
+    $width = imagesx($source);
+    $height = imagesy($source);
+    if ($width <= 0 || $height <= 0) {
+        imagedestroy($source);
+        return false;
+    }
+
+    $ratio = min($maxSize / $width, $maxSize / $height, 1);
+    $targetWidth = max(1, (int)round($width * $ratio));
+    $targetHeight = max(1, (int)round($height * $ratio));
+    $target = imagecreatetruecolor($targetWidth, $targetHeight);
+    if (!$target) {
+        imagedestroy($source);
+        return false;
+    }
+
+    $white = imagecolorallocate($target, 255, 255, 255);
+    imagefill($target, 0, 0, $white);
+    imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+    $ok = imagejpeg($target, $targetPath, 78);
+    imagedestroy($source);
+    imagedestroy($target);
+
+    return $ok;
+}
+
+function attachment_stream_thumbnail(int $attachmentId, int $maxSize = 520): void
+{
+    $fields = 'id, original_name, mime_type, file_size';
+    if (attachment_column_exists('file_path')) {
+        $fields .= ', file_path';
+    }
+
+    $stmt = db()->prepare("SELECT $fields FROM service_attachments WHERE id = ?");
+    $stmt->execute([$attachmentId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        http_response_code(404);
+        exit('Dosya bulunamadi.');
+    }
+
+    $path = attachment_absolute_path($row['file_path'] ?? null);
+    $mime = (string)($row['mime_type'] ?? '');
+    if ($path === null || !is_file($path) || !attachment_thumbnail_supported($mime)) {
+        attachment_stream($attachmentId, false);
+    }
+
+    try {
+        $thumbPath = attachment_thumbnail_cache_path($attachmentId, $path, $maxSize);
+        if (!is_file($thumbPath) && !attachment_create_thumbnail($path, $mime, $thumbPath, $maxSize)) {
+            attachment_stream($attachmentId, false);
+        }
+    } catch (Throwable $e) {
+        attachment_stream($attachmentId, false);
+    }
+
+    $size = filesize($thumbPath);
+    if ($size === false) {
+        attachment_stream($attachmentId, false);
+    }
+
+    $thumbRow = $row;
+    $thumbRow['mime_type'] = 'image/jpeg';
+    attachment_send_response_headers($thumbRow, $size, false, filemtime($thumbPath) ?: null);
+    readfile($thumbPath);
+    exit;
+}
+
 function attachment_stream(int $attachmentId, bool $forceDownload = true): void
 {
     $fields = 'original_name, mime_type, file_size';

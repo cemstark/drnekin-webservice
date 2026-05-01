@@ -16,6 +16,10 @@ if (!is_file($path)) {
     exit;
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 $mtime = filemtime($path) ?: time();
 $etag = '"' . sha1($file . ':' . filesize($path) . ':' . $mtime) . '"';
 

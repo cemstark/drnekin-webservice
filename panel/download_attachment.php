@@ -17,5 +17,13 @@ if (!$meta) {
     exit('Dosya bulunamadi.');
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 $inline = isset($_GET['inline']) && $_GET['inline'] === '1';
+if ($inline && isset($_GET['thumb']) && $_GET['thumb'] === '1') {
+    attachment_stream_thumbnail($id);
+}
+
 attachment_stream($id, !$inline);
