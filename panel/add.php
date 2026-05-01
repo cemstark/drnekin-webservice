@@ -30,6 +30,8 @@ $fields = [
     'mini_repair_part' => '',
     'service_entry_date' => date('Y-m-d'),
     'service_exit_date' => '',
+    'policy_start_date' => '',
+    'policy_end_date' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -43,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'mini_repair_part' => trim((string)($_POST['mini_repair_part'] ?? '')),
         'service_entry_date' => add_date_value($_POST['service_entry_date'] ?? ''),
         'service_exit_date' => add_date_value($_POST['service_exit_date'] ?? ''),
+        'policy_start_date' => add_date_value($_POST['policy_start_date'] ?? ''),
+        'policy_end_date' => add_date_value($_POST['policy_end_date'] ?? ''),
     ];
 
     if ($fields['plate'] === '' || $fields['customer_name'] === '' || $fields['service_entry_date'] === null) {
@@ -52,9 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $recordNo = add_record_no($fields['plate'], $fields['service_entry_date']);
         $insert = db()->prepare(
             'INSERT INTO service_records
-             (record_no, plate, customer_name, insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, service_month, updated_at)
+             (record_no, plate, customer_name, insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, policy_start_date, policy_end_date, service_month, updated_at)
              VALUES
-             (:record_no, :plate, :customer_name, :insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :service_month, NOW())'
+             (:record_no, :plate, :customer_name, :insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :policy_start_date, :policy_end_date, :service_month, NOW())'
         );
         $insert->execute([
             ':record_no' => $recordNo,
@@ -66,6 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':mini_repair_part' => $fields['mini_repair_part'],
             ':service_entry_date' => $fields['service_entry_date'],
             ':service_exit_date' => $fields['service_exit_date'],
+            ':policy_start_date' => $fields['policy_start_date'],
+            ':policy_end_date' => $fields['policy_end_date'],
             ':service_month' => substr((string)$fields['service_entry_date'], 0, 7),
         ]);
 
@@ -88,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'mini_repair_part' => '',
             'service_entry_date' => date('Y-m-d'),
             'service_exit_date' => '',
+            'policy_start_date' => '',
+            'policy_end_date' => '',
         ];
     }
 }
@@ -159,6 +167,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label class="grid gap-2 text-sm font-semibold text-slate-700">
           Cikis Tarihi
           <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="service_exit_date" value="<?= e($fields['service_exit_date']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Police Baslangic Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="policy_start_date" value="<?= e($fields['policy_start_date']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Police Bitis Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="policy_end_date" value="<?= e($fields['policy_end_date']) ?>">
         </label>
         <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
           <a class="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" href="<?= e(panel_url('index.php')) ?>">Vazgec</a>

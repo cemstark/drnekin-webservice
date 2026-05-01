@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'mini_repair_part' => trim((string)($_POST['mini_repair_part'] ?? '')),
         'service_entry_date' => edit_date_value($_POST['service_entry_date'] ?? ''),
         'service_exit_date' => edit_date_value($_POST['service_exit_date'] ?? ''),
+        'policy_start_date' => edit_date_value($_POST['policy_start_date'] ?? ''),
+        'policy_end_date' => edit_date_value($_POST['policy_end_date'] ?? ''),
     ];
 
     if ($fields['plate'] === '' || $fields['customer_name'] === '' || $fields['service_entry_date'] === null) {
@@ -51,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              mini_repair_part = :mini_repair_part,
              service_entry_date = :service_entry_date,
              service_exit_date = :service_exit_date,
+             policy_start_date = :policy_start_date,
+             policy_end_date = :policy_end_date,
              service_month = :service_month,
              updated_at = NOW()
              WHERE id = :id'
@@ -64,6 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':mini_repair_part' => $fields['mini_repair_part'],
             ':service_entry_date' => $fields['service_entry_date'],
             ':service_exit_date' => $fields['service_exit_date'],
+            ':policy_start_date' => $fields['policy_start_date'],
+            ':policy_end_date' => $fields['policy_end_date'],
             ':service_month' => substr((string)$fields['service_entry_date'], 0, 7),
             ':id' => $id,
         ]);
@@ -120,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label>Mini Onarim Parca <input name="mini_repair_part" value="<?= e($record['mini_repair_part']) ?>"></label>
         <label>Giris Tarihi <input type="date" name="service_entry_date" value="<?= e($record['service_entry_date']) ?>" required></label>
         <label>Cikis Tarihi <input type="date" name="service_exit_date" value="<?= e($record['service_exit_date']) ?>"></label>
+        <label>Police Baslangic Tarihi <input type="date" name="policy_start_date" value="<?= e($record['policy_start_date'] ?? '') ?>"></label>
+        <label>Police Bitis Tarihi <input type="date" name="policy_end_date" value="<?= e($record['policy_end_date'] ?? '') ?>"></label>
         <button type="submit">Kaydet</button>
       </form>
     </section>

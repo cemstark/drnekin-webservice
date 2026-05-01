@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS service_records (
   mini_repair_part VARCHAR(180) NOT NULL DEFAULT '',
   service_entry_date DATE NOT NULL,
   service_exit_date DATE NULL,
+  policy_start_date DATE NULL,
+  policy_end_date DATE NULL,
   service_month CHAR(7) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,7 +31,8 @@ CREATE TABLE IF NOT EXISTS service_records (
   UNIQUE KEY service_records_record_no_unique (record_no),
   KEY service_records_month_index (service_month),
   KEY service_records_plate_index (plate),
-  KEY service_records_status_index (repair_status)
+  KEY service_records_status_index (repair_status),
+  KEY service_records_policy_end_index (policy_end_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS import_logs (
