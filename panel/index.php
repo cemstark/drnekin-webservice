@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/policy_runner.php';
 require_login();
+fire_policy_reminder_async();
 
 function month_label(?string $month): string
 {
