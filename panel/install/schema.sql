@@ -22,9 +22,6 @@ CREATE TABLE IF NOT EXISTS service_records (
   mini_repair_part VARCHAR(180) NOT NULL DEFAULT '',
   service_entry_date DATE NOT NULL,
   service_exit_date DATE NULL,
-  policy_start_date DATE NULL,
-  policy_end_date DATE NULL,
-  policy_reminder_sent_at DATETIME NULL,
   service_month CHAR(7) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -32,25 +29,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   UNIQUE KEY service_records_record_no_unique (record_no),
   KEY service_records_month_index (service_month),
   KEY service_records_plate_index (plate),
-  KEY service_records_status_index (repair_status),
-  KEY service_records_policy_end_index (policy_end_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS service_attachments (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  record_id INT UNSIGNED NOT NULL,
-  category ENUM('avukat','ruhsat','kaza','police','fotograf','diger') NOT NULL DEFAULT 'diger',
-  original_name VARCHAR(255) NOT NULL,
-  mime_type VARCHAR(120) NOT NULL,
-  file_size INT UNSIGNED NOT NULL,
-  file_data MEDIUMBLOB NOT NULL,
-  uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  uploaded_by INT UNSIGNED NULL,
-  PRIMARY KEY (id),
-  KEY service_attachments_record_index (record_id),
-  KEY service_attachments_category_index (category),
-  CONSTRAINT service_attachments_record_fk FOREIGN KEY (record_id) REFERENCES service_records(id) ON DELETE CASCADE,
-  CONSTRAINT service_attachments_user_fk FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+  KEY service_records_status_index (repair_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS import_logs (
