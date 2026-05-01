@@ -51,10 +51,42 @@ function add_index_if_missing(PDO $pdo, string $db, string $table, string $index
     }
 }
 
+function create_table_if_missing(PDO $pdo, string $db, string $table, string $createSql, array &$log): void
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?');
+    $stmt->execute([$db, $table]);
+    if ((int)$stmt->fetchColumn() === 0) {
+        $pdo->exec($createSql);
+        $log[] = "+ tablo olusturuldu: $table";
+    } else {
+        $log[] = "  tablo zaten var: $table";
+    }
+}
+
 try {
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_start_date', 'policy_start_date DATE NULL AFTER service_exit_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_end_date',   'policy_end_date DATE NULL AFTER policy_start_date', $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_policy_end_index', 'INDEX service_records_policy_end_index (policy_end_date)', $log);
+
+    create_table_if_missing($pdo, $dbName, 'service_attachments',
+        "CREATE TABLE service_attachments (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            record_id INT UNSIGNED NOT NULL,
+            category ENUM('avukat','ruhsat','kaza','police','fotograf','diger') NOT NULL DEFAULT 'diger',
+            original_name VARCHAR(255) NOT NULL,
+            mime_type VARCHAR(120) NOT NULL,
+            file_size INT UNSIGNED NOT NULL,
+            file_data MEDIUMBLOB NOT NULL,
+            uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            uploaded_by INT UNSIGNED NULL,
+            PRIMARY KEY (id),
+            KEY service_attachments_record_index (record_id),
+            KEY service_attachments_category_index (category),
+            CONSTRAINT service_attachments_record_fk FOREIGN KEY (record_id) REFERENCES service_records(id) ON DELETE CASCADE,
+            CONSTRAINT service_attachments_user_fk FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        $log
+    );
 
     $log[] = '';
     $log[] = 'Migration tamamlandi.';
