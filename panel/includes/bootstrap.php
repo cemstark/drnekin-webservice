@@ -46,6 +46,18 @@ function panel_url(string $path = ''): string
     return $base . '/' . ltrim($path, '/');
 }
 
+function panel_asset_url(string $path): string
+{
+    $url = panel_url($path);
+    $file = dirname(__DIR__) . '/' . ltrim($path, '/');
+    if (is_file($file)) {
+        $separator = str_contains($url, '?') ? '&' : '?';
+        $url .= $separator . 'v=' . filemtime($file);
+    }
+
+    return $url;
+}
+
 function e(mixed $value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');

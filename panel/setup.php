@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kurulum - <?= e(panel_config('app_name')) ?></title>
-  <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
 </head>
 <body class="login-page">
   <main class="login-shell">

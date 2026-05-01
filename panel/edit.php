@@ -177,7 +177,7 @@ try {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kayit Duzenle - <?= e(panel_config('app_name')) ?></title>
-  <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
