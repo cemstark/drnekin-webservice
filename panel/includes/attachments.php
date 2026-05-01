@@ -206,12 +206,23 @@ function attachment_save(int $recordId, array $file, string $category, ?int $use
             $stmt->bindValue(':uploaded_by', $userId, PDO::PARAM_INT);
         }
         $stmt->execute();
+        $attachmentId = (int)db()->lastInsertId();
+        if (attachment_thumbnail_supported($mime)) {
+            try {
+                $thumbPath = attachment_thumbnail_cache_path($attachmentId, $absolutePath, 420);
+                if (!is_file($thumbPath)) {
+                    attachment_create_thumbnail($absolutePath, $mime, $thumbPath, 420);
+                }
+            } catch (Throwable $e) {
+                // Thumbnail olusmazsa orijinal dosya akisi calismaya devam eder.
+            }
+        }
     } catch (Throwable $e) {
         @unlink($absolutePath);
         throw $e;
     }
 
-    return (int)db()->lastInsertId();
+    return $attachmentId;
 }
 
 function attachment_fetch_for_record(int $recordId, ?string $category = null): array
@@ -291,10 +302,11 @@ function attachment_send_response_headers(array $row, int $length, bool $forceDo
 
 function attachment_thumbnail_supported(string $mime): bool
 {
+    $hasImagick = class_exists('Imagick');
     return match ($mime) {
-        'image/jpeg' => function_exists('imagecreatefromjpeg'),
-        'image/png' => function_exists('imagecreatefrompng'),
-        'image/webp' => function_exists('imagecreatefromwebp'),
+        'image/jpeg' => function_exists('imagecreatefromjpeg') || $hasImagick,
+        'image/png' => function_exists('imagecreatefrompng') || $hasImagick,
+        'image/webp' => function_exists('imagecreatefromwebp') || $hasImagick,
         default => false,
     };
 }
@@ -324,7 +336,29 @@ function attachment_create_thumbnail(string $sourcePath, string $mime, string $t
         default => null,
     };
     if ($create === null || !function_exists($create)) {
-        return false;
+        if (!class_exists('Imagick')) {
+            return false;
+        }
+
+        try {
+            $image = new Imagick($sourcePath);
+            if ($image->getNumberImages() > 1) {
+                $image->setIteratorIndex(0);
+            }
+            $image->setImageBackgroundColor('white');
+            $image->thumbnailImage($maxSize, $maxSize, true, true);
+            $image->setImageFormat('jpeg');
+            $image->setImageCompressionQuality(78);
+            $flattened = $image->mergeImageLayers(Imagick::LAYERMETHOD_FLATTEN);
+            $ok = $flattened->writeImage($targetPath);
+            $flattened->clear();
+            $flattened->destroy();
+            $image->clear();
+            $image->destroy();
+            return $ok;
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     $source = @$create($sourcePath);
@@ -358,7 +392,7 @@ function attachment_create_thumbnail(string $sourcePath, string $mime, string $t
     return $ok;
 }
 
-function attachment_stream_thumbnail(int $attachmentId, int $maxSize = 520): void
+function attachment_stream_thumbnail(int $attachmentId, int $maxSize = 420): void
 {
     $fields = 'id, original_name, mime_type, file_size';
     if (attachment_column_exists('file_path')) {
