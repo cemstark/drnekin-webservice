@@ -112,9 +112,9 @@ try {
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><?= e(panel_config('app_name')) ?></title>
-  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
+  <?php render_panel_head_assets(); ?>
 </head>
 <body>
   <header class="topbar">
@@ -177,12 +177,12 @@ try {
                 $tone = $d <= 7 ? 'status-red' : 'status-yellow';
               ?>
                 <tr>
-                  <td><strong><?= e($p['plate']) ?></strong></td>
-                  <td><?= e($p['customer_name']) ?></td>
-                  <td style="color:var(--muted)"><?= e($p['insurance_company'] ?: '-') ?></td>
-                  <td style="color:var(--muted)"><?= e(format_tr_date($p['policy_end_date'])) ?></td>
-                  <td><span class="pill <?= $tone ?>"><?= e($d) ?> gun</span></td>
-                  <td style="text-align:right">
+                  <td data-label="Plaka"><strong><?= e($p['plate']) ?></strong></td>
+                  <td data-label="Musteri"><?= e($p['customer_name']) ?></td>
+                  <td data-label="Sigorta" style="color:var(--muted)"><?= e($p['insurance_company'] ?: '-') ?></td>
+                  <td data-label="Bitis" style="color:var(--muted)"><?= e(format_tr_date($p['policy_end_date'])) ?></td>
+                  <td data-label="Kalan"><span class="pill <?= $tone ?>"><?= e($d) ?> gun</span></td>
+                  <td data-label="Islem" style="text-align:right">
                     <a class="btn-soft" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
                   </td>
                 </tr>
@@ -263,15 +263,15 @@ try {
           <tbody>
             <?php foreach ($records as $record): ?>
               <tr>
-                <td><strong><?= e($record['plate']) ?></strong></td>
-                <td style="font-weight:600"><?= e($record['customer_name']) ?></td>
-                <td><span class="type-badge"><?= e(insurance_type_label($record['insurance_type'] ?? 'kasko')) ?></span></td>
-                <td style="color:var(--muted)"><?= e($record['insurance_company'] ?: '-') ?></td>
-                <td><span class="pill <?= e(repair_status_tone((string)$record['repair_status'])) ?>"><?= e($record['repair_status']) ?></span></td>
-                <td><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : '<span style="color:var(--muted-2)">Yok</span>' ?></td>
-                <td style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(format_tr_date($record['service_entry_date'])) ?></td>
-                <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;<?= $record['service_exit_date'] ? 'color:var(--muted)' : 'color:var(--amber);font-weight:600' ?>"><?= $record['service_exit_date'] ? e(format_tr_date($record['service_exit_date'])) : 'Acik' ?></td>
-                <td style="text-align:right;white-space:nowrap">
+                <td data-label="Plaka"><strong><?= e($record['plate']) ?></strong></td>
+                <td data-label="Ad Soyad" style="font-weight:600"><?= e($record['customer_name']) ?></td>
+                <td data-label="Arac Filtresi"><span class="type-badge"><?= e(insurance_type_label($record['insurance_type'] ?? 'kasko')) ?></span></td>
+                <td data-label="Sigorta" style="color:var(--muted)"><?= e($record['insurance_company'] ?: '-') ?></td>
+                <td data-label="Tamir Durumu"><span class="pill <?= e(repair_status_tone((string)$record['repair_status'])) ?>"><?= e($record['repair_status']) ?></span></td>
+                <td data-label="Mini Onarim"><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : '<span style="color:var(--muted-2)">Yok</span>' ?></td>
+                <td data-label="Giris" style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(format_tr_date($record['service_entry_date'])) ?></td>
+                <td data-label="Cikis" style="font-family:'IBM Plex Mono',monospace;font-size:12px;<?= $record['service_exit_date'] ? 'color:var(--muted)' : 'color:var(--amber);font-weight:600' ?>"><?= $record['service_exit_date'] ? e(format_tr_date($record['service_exit_date'])) : 'Acik' ?></td>
+                <td data-label="Islem" style="text-align:right;white-space:nowrap">
                   <a class="btn-table" href="<?= e(panel_url('view.php?id=' . (int)$record['id'])) ?>">Detay</a>
                   <a class="btn-table-primary" href="<?= e(panel_url('edit.php?id=' . (int)$record['id'])) ?>">Duzenle</a>
                 </td>

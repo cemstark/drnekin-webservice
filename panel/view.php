@@ -43,9 +43,9 @@ unset($_SESSION['flash_error']);
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Detay <?= e($record['plate']) ?> - <?= e(panel_config('app_name')) ?></title>
-  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
+  <?php render_panel_head_assets(); ?>
 </head>
 <body>
   <header class="topbar">
@@ -161,7 +161,7 @@ unset($_SESSION['flash_error']);
           <?php if ($attachments === []): ?>
             <p style="font-size:13px;color:var(--muted)">Bu kategori icin dosya yok.</p>
           <?php else: ?>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div class="attachment-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
               <?php foreach ($attachments as $att):
                 $isImage = attachment_is_image($att['mime_type']);
                 $canPreview = attachment_can_preview($att['mime_type']);
@@ -170,7 +170,7 @@ unset($_SESSION['flash_error']);
                 <div class="attachment-card">
                   <div style="aspect-ratio:4/3;background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden">
                     <?php if ($isImage): ?>
-                      <img src="<?= e($previewUrl) ?>" alt="<?= e($att['original_name']) ?>" style="width:100%;height:100%;object-fit:cover">
+                      <img src="<?= e($previewUrl) ?>" alt="<?= e($att['original_name']) ?>" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">
                     <?php else: ?>
                       <svg xmlns="http://www.w3.org/2000/svg" style="width:48px;height:48px;color:var(--muted-2)" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/></svg>
                     <?php endif; ?>

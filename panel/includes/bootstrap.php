@@ -58,6 +58,23 @@ function panel_asset_url(string $path): string
     return $url;
 }
 
+function panel_font_url(): string
+{
+    return 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap';
+}
+
+function render_panel_head_assets(): void
+{
+    $fontUrl = panel_font_url();
+    ?>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="<?= e($fontUrl) ?>">
+  <link rel="stylesheet" href="<?= e($fontUrl) ?>">
+  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
+    <?php
+}
+
 function e(mixed $value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');

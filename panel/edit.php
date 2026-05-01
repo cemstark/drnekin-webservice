@@ -174,9 +174,9 @@ try {
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kayit Duzenle - <?= e(panel_config('app_name')) ?></title>
-  <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
+  <?php render_panel_head_assets(); ?>
 </head>
 <body>
   <header class="topbar">
@@ -280,11 +280,11 @@ try {
               <tbody>
                 <?php foreach ($attachments as $att): ?>
                   <tr>
-                    <td><span class="type-badge"><?= e(attachment_category_label($att['category'])) ?></span></td>
-                    <td><?= e($att['original_name']) ?></td>
-                    <td class="muted-cell"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
-                    <td class="muted-cell"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
-                    <td class="row-actions">
+                    <td data-label="Kategori"><span class="type-badge"><?= e(attachment_category_label($att['category'])) ?></span></td>
+                    <td data-label="Dosya"><?= e($att['original_name']) ?></td>
+                    <td data-label="Boyut" class="muted-cell"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
+                    <td data-label="Yuklendi" class="muted-cell"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
+                    <td data-label="Islem" class="row-actions">
                       <?php if (attachment_can_preview($att['mime_type'])): ?>
                         <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener">Goruntule</a>
                       <?php endif; ?>
