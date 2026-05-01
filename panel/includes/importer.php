@@ -88,6 +88,11 @@ function import_excel_file(string $path, string $sourceName): array
                     continue;
                 }
 
+                if (service_record_duplicate_exists($pdo, $record)) {
+                    $skipped++;
+                    continue;
+                }
+
                 if (mark_existing_plate_return($pdo, (string)$record['plate'])) {
                     $skipped++;
                     continue;
@@ -293,6 +298,25 @@ function upsert_service_record(PDO $pdo, array $record): void
         $params[':insurance_type'] = $record['insurance_type'] ?? infer_insurance_type_from_company((string)$record['insurance_company']);
     }
     $stmt->execute($params);
+}
+
+function service_record_duplicate_exists(PDO $pdo, array $record): bool
+{
+    $stmt = $pdo->prepare(
+        'SELECT id
+         FROM service_records
+         WHERE plate = ?
+           AND service_entry_date = ?
+           AND customer_name = ?
+         LIMIT 1'
+    );
+    $stmt->execute([
+        $record['plate'],
+        $record['service_entry_date'],
+        $record['customer_name'],
+    ]);
+
+    return (bool)$stmt->fetchColumn();
 }
 
 /**
