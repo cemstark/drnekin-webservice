@@ -82,7 +82,13 @@ if ($q !== '') {
 }
 
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-$stmt = $pdo->prepare("SELECT * FROM service_records $whereSql ORDER BY service_entry_date DESC, updated_at DESC LIMIT 500");
+$stmt = $pdo->prepare(
+    "SELECT id, plate, customer_name, insurance_type, insurance_company, repair_status,
+            mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, updated_at
+     FROM service_records $whereSql
+     ORDER BY service_entry_date DESC, updated_at DESC
+     LIMIT 500"
+);
 $stmt->execute($params);
 $records = $stmt->fetchAll();
 
@@ -90,7 +96,7 @@ $months = $pdo->query('SELECT service_month, COUNT(*) total FROM service_records
 $statusesFromDb = $pdo->query('SELECT repair_status FROM service_records WHERE repair_status <> "" GROUP BY repair_status ORDER BY repair_status')->fetchAll(PDO::FETCH_COLUMN);
 $statuses = array_values(array_unique(array_merge(array_keys(repair_status_options()), $statusesFromDb)));
 $summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(mini_repair_has = 1) mini_count FROM service_records')->fetch();
-$lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
+$lastImport = $pdo->query('SELECT created_at FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
 
 $policyExpiringSoon = [];
 try {

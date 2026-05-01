@@ -261,6 +261,34 @@ function attachment_data_for_row(array $row): string
     throw new RuntimeException('Dosya depoda bulunamadi.');
 }
 
+function attachment_send_response_headers(array $row, int $length, bool $forceDownload, ?int $modifiedAt = null): void
+{
+    while (ob_get_level() > 0) { ob_end_clean(); }
+
+    $disposition = $forceDownload ? 'attachment' : 'inline';
+    $safeName = preg_replace('/[\r\n"]+/', '_', (string)$row['original_name']);
+    $etag = $modifiedAt !== null ? '"' . sha1((string)$row['original_name'] . ':' . $length . ':' . $modifiedAt) . '"' : null;
+
+    if ($etag !== null && trim((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')) === $etag) {
+        header('Cache-Control: private, max-age=86400');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', (int)$modifiedAt) . ' GMT');
+        header('ETag: ' . $etag);
+        http_response_code(304);
+        exit;
+    }
+
+    header('Content-Type: ' . ($row['mime_type'] ?: 'application/octet-stream'));
+    header('Content-Length: ' . (string)$length);
+    header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: private, max-age=86400');
+
+    if ($modifiedAt !== null) {
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modifiedAt) . ' GMT');
+        header('ETag: ' . $etag);
+    }
+}
+
 function attachment_stream(int $attachmentId, bool $forceDownload = true): void
 {
     $fields = 'original_name, mime_type, file_size';
@@ -279,6 +307,19 @@ function attachment_stream(int $attachmentId, bool $forceDownload = true): void
         exit('Dosya bulunamadi.');
     }
 
+    $path = attachment_absolute_path($row['file_path'] ?? null);
+    if ($path !== null && is_file($path)) {
+        $size = filesize($path);
+        if ($size === false) {
+            http_response_code(404);
+            exit('Dosya depoda bulunamadi.');
+        }
+
+        attachment_send_response_headers($row, $size, $forceDownload, filemtime($path) ?: null);
+        readfile($path);
+        exit;
+    }
+
     try {
         $data = attachment_data_for_row($row);
     } catch (Throwable $e) {
@@ -286,14 +327,7 @@ function attachment_stream(int $attachmentId, bool $forceDownload = true): void
         exit('Dosya depoda bulunamadi.');
     }
 
-    while (ob_get_level() > 0) { ob_end_clean(); }
-    header('Content-Type: ' . ($row['mime_type'] ?: 'application/octet-stream'));
-    header('Content-Length: ' . strlen($data));
-    $disposition = $forceDownload ? 'attachment' : 'inline';
-    $safeName = preg_replace('/[\r\n"]+/', '_', (string)$row['original_name']);
-    header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
-    header('X-Content-Type-Options: nosniff');
-    header('Cache-Control: private, max-age=0, must-revalidate');
+    attachment_send_response_headers($row, strlen($data), $forceDownload);
     echo $data;
     exit;
 }

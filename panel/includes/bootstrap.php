@@ -70,7 +70,8 @@ function render_panel_head_assets(): void
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="<?= e($fontUrl) ?>">
-  <link rel="stylesheet" href="<?= e($fontUrl) ?>">
+  <link rel="stylesheet" href="<?= e($fontUrl) ?>" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="<?= e($fontUrl) ?>"></noscript>
   <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
     <?php
 }
