@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <h1>Kayit Duzenle</h1>
     </div>
     <nav>
+      <a href="<?= e(panel_url('view.php?id=' . $id)) ?>">Detay</a>
       <a href="<?= e(panel_url('index.php')) ?>">Panele don</a>
       <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
     </nav>
