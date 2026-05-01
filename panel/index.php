@@ -198,14 +198,14 @@ try {
       </section>
     <?php endif; ?>
 
-    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Arac filtreleri">
+    <section class="filter-panel mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Arac filtreleri">
       <div class="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-sm font-semibold text-slate-950">Arac filtreleri</h2>
-          <p class="text-xs text-slate-500">Kayitlari hizmet tipine gore hizli filtrele</p>
+          <h2 class="filter-title text-sm font-semibold text-slate-950">Arac filtreleri</h2>
+          <p class="filter-subtitle text-xs text-slate-500">Kayitlari hizmet tipine gore hizli filtrele</p>
         </div>
         <?php if ($type !== ''): ?>
-          <a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['type' => null, 'insurance' => null])) ?>">Filtreyi kaldir</a>
+          <a class="filter-clear rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['type' => null, 'insurance' => null])) ?>">Filtreyi kaldir</a>
         <?php endif; ?>
       </div>
       <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">

@@ -395,6 +395,11 @@ tbody tr:hover {
   white-space: pre-wrap;
 }
 
+.message-list {
+  margin: 6px 0 0 18px;
+  font-weight: 500;
+}
+
 .log-note {
   margin-top: 16px;
   color: var(--muted);
@@ -404,6 +409,70 @@ tbody tr:hover {
 main.mx-auto {
   padding-top: 28px;
   padding-bottom: 56px;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+}
+
+.btn-primary {
+  border: 1px solid #0284c7;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(14, 165, 233, .18);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+}
+
+.btn-secondary,
+button.btn-secondary {
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #155e75;
+  box-shadow: 0 1px 2px rgba(14, 116, 144, .06);
+}
+
+.btn-secondary:hover,
+button.btn-secondary:hover {
+  transform: translateY(-1px);
+  border-color: #7dd3fc;
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.btn-soft {
+  border: 1px solid #bae6fd;
+  background: linear-gradient(180deg, #f0f9ff, #ecfdf5);
+  color: #0369a1;
+}
+
+.btn-soft:hover {
+  border-color: #86efac;
+  color: #047857;
+}
+
+.section-kicker {
+  margin: 0;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 main > section.grid.gap-4 > div {
@@ -429,20 +498,53 @@ main > section.grid.gap-4 strong {
   letter-spacing: -0.035em;
 }
 
-main > section[aria-label="Arac filtreleri"],
+.filter-panel,
 main > form[method="get"] {
   border-color: rgba(191, 219, 254, .9) !important;
   border-radius: 16px !important;
-  background: rgba(255, 255, 255, .94) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(240, 253, 250, .7)) !important;
   box-shadow: var(--shadow) !important;
 }
 
-main > section[aria-label="Arac filtreleri"] a {
+.filter-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #0ea5e9, #34d399);
+}
+
+.filter-title {
+  color: #0f172a !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+}
+
+.filter-subtitle {
+  margin-top: 3px;
+  color: #52677d !important;
+  font-weight: 600;
+}
+
+.filter-clear {
+  border-color: #bfdbfe !important;
+  background: #fff !important;
+  color: #0369a1 !important;
+}
+
+.filter-panel a {
   border-radius: 999px !important;
   transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease;
 }
 
-main > section[aria-label="Arac filtreleri"] a:hover {
+.filter-panel a:hover {
   transform: translateY(-1px);
 }
 
@@ -560,6 +662,281 @@ td a:hover {
   transition: background .14s ease;
 }
 
+.detail-shell,
+.edit-shell {
+  color: #0f172a;
+}
+
+.detail-card,
+.edit-card {
+  border-color: rgba(191, 219, 254, .78) !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.detail-hero,
+.detail-section-head,
+.edit-hero,
+.edit-section-head {
+  background:
+    linear-gradient(135deg, rgba(240, 249, 255, .95), rgba(236, 253, 245, .84)) !important;
+  border-color: rgba(191, 219, 254, .82) !important;
+}
+
+.detail-hero h2,
+.edit-hero h2 {
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.detail-grid {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(248, 253, 255, .72));
+}
+
+.detail-item {
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.detail-item dt {
+  color: #56708a !important;
+  letter-spacing: .04em;
+}
+
+.detail-item dd {
+  color: #0f172a !important;
+  font-weight: 700;
+}
+
+.upload-panel {
+  border-color: #bae6fd !important;
+  background:
+    linear-gradient(180deg, rgba(240, 249, 255, .86), rgba(236, 253, 245, .72)) !important;
+}
+
+.category-tabs a {
+  border-color: #dbeafe;
+  background: #fff;
+  color: #36546f;
+}
+
+.category-tabs a:hover,
+.category-tabs a.active {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #ecfdf5, #f0f9ff);
+  color: #047857;
+}
+
+.attachment-card {
+  border-color: #dbeafe !important;
+  box-shadow: 0 10px 30px rgba(14, 116, 144, .06);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.attachment-card:hover {
+  transform: translateY(-2px);
+  border-color: #7dd3fc !important;
+  box-shadow: 0 18px 38px rgba(14, 116, 144, .10);
+}
+
+.edit-card {
+  padding: 0;
+}
+
+.edit-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.edit-hero h2 {
+  margin: 4px 0 2px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.edit-hero span {
+  color: #5f7288;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.edit-card > .success,
+.edit-card > .alert {
+  margin: 16px 24px 0;
+  border-radius: 12px;
+}
+
+.edit-form {
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.edit-form label {
+  display: grid;
+  gap: 7px;
+  color: #52677d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.edit-form input,
+.edit-form select,
+.detail-shell input,
+.detail-shell select {
+  border-color: #cfe8ff;
+  border-radius: 11px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 650;
+}
+
+.edit-form input:focus,
+.edit-form select:focus,
+.detail-shell input:focus,
+.detail-shell select:focus {
+  outline: 4px solid #dff7ef;
+  border-color: #38bdf8;
+}
+
+.edit-form .check-row {
+  min-height: 42px;
+  align-self: end;
+  grid-template-columns: none;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #f8fbff;
+}
+
+.edit-upload {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed #bae6fd;
+  border-radius: 14px;
+}
+
+.edit-upload legend {
+  padding: 0 8px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.edit-upload p {
+  margin: 0 0 10px;
+  color: #5f7288;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.attach-add {
+  margin-top: 10px;
+  min-height: 34px;
+}
+
+.attach-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.attach-row select,
+.attach-row input,
+.attach-row button {
+  min-height: 36px;
+  font-size: 13px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-secondary {
+  min-width: 110px;
+}
+
+.edit-attachments {
+  margin: 6px 24px 24px;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.edit-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.edit-section-head h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.compact-table table {
+  min-width: 760px;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 10px 12px;
+}
+
+.muted-cell {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-actions a,
+.row-actions form {
+  display: inline-flex;
+  margin-left: 10px;
+}
+
+.link-danger {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.link-danger:hover {
+  background: transparent;
+  color: #b91c1c;
+}
+
 @media (max-width: 900px) {
   .topbar, .table-head {
     align-items: flex-start;
@@ -568,6 +945,17 @@ td a:hover {
   }
 
   .metrics, .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-hero,
+  .edit-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .attach-row {
     grid-template-columns: 1fr;
   }
 }

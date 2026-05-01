@@ -193,15 +193,22 @@ try {
     </nav>
   </header>
 
-  <main class="layout narrow">
-    <section class="table-card form-card">
-      <h2><?= e($record['plate']) ?> - <?= e($record['customer_name']) ?></h2>
+  <main class="edit-shell mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <section class="edit-card table-card form-card">
+      <div class="edit-hero">
+        <div>
+          <p class="section-kicker">Kayit yonetimi</p>
+          <h2><?= e($record['plate']) ?> - <?= e($record['customer_name']) ?></h2>
+          <span>Kayit no: <?= e($record['record_no']) ?></span>
+        </div>
+        <a class="btn-secondary" href="<?= e(panel_url('view.php?id=' . $id)) ?>">Detaya don</a>
+      </div>
       <?php if ($saved): ?>
         <div class="success">Kayit guncellendi. Excel senkron kuyruguna eklendi.</div>
       <?php endif; ?>
       <?php if ($uploadWarnings): ?>
         <div class="alert">Bazi dosyalar yuklenemedi:
-          <ul style="margin:6px 0 0 18px;font-weight:normal">
+          <ul class="message-list">
             <?php foreach ($uploadWarnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?>
           </ul>
         </div>
@@ -209,8 +216,9 @@ try {
       <?php if ($error !== ''): ?>
         <div class="alert"><?= e($error) ?></div>
       <?php endif; ?>
-      <form method="post" enctype="multipart/form-data">
+      <form method="post" enctype="multipart/form-data" class="edit-form">
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+        <div class="form-grid">
         <label>Plaka <input name="plate" value="<?= e($record['plate']) ?>" required></label>
         <label>Ad Soyad <input name="customer_name" value="<?= e($record['customer_name']) ?>" required></label>
         <label>Arac Filtresi
@@ -238,50 +246,56 @@ try {
         <label>Cikis Tarihi <input type="date" name="service_exit_date" value="<?= e($record['service_exit_date']) ?>"></label>
         <label>Police Baslangic Tarihi <input type="date" name="policy_start_date" value="<?= e($record['policy_start_date'] ?? '') ?>"></label>
         <label>Police Bitis Tarihi <input type="date" name="policy_end_date" value="<?= e($record['policy_end_date'] ?? '') ?>"></label>
+        </div>
 
-        <fieldset style="margin-top:14px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f8fafc">
-          <legend style="font-weight:600;padding:0 6px">Belge / Fotograf ekle (opsiyonel)</legend>
-          <p style="font-size:12px;color:#64748b;margin:0 0 8px">Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
+        <fieldset class="upload-panel edit-upload">
+          <legend>Belge / Fotograf ekle (opsiyonel)</legend>
+          <p>Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
           <div id="attach-rows"></div>
-          <button type="button" id="attach-add-row" style="margin-top:6px;padding:6px 10px;font-size:12px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer">+ Satir ekle</button>
+          <button type="button" id="attach-add-row" class="btn-secondary attach-add">+ Satir ekle</button>
         </fieldset>
 
-        <button type="submit">Kaydet</button>
+        <div class="form-actions">
+          <a class="btn-secondary" href="<?= e(panel_url('view.php?id=' . $id)) ?>">Vazgec</a>
+          <button class="btn-primary" type="submit">Kaydet</button>
+        </div>
       </form>
 
       <?php if ($attachmentsAvailable && $attachments !== []): ?>
-        <section style="margin-top:24px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 10px">
-            <h3 style="margin:0;font-size:16px;font-weight:700">Mevcut belgeler &amp; fotograflar</h3>
-            <a href="<?= e(panel_url('download_all.php?id=' . $id)) ?>" style="display:inline-block;padding:6px 12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:12px;font-weight:600;border-radius:6px;text-decoration:none">Tumunu ZIP indir</a>
+        <section class="edit-attachments">
+          <div class="edit-section-head">
+            <h3>Mevcut belgeler &amp; fotograflar</h3>
+            <a class="btn-soft" href="<?= e(panel_url('download_all.php?id=' . $id)) ?>">Tumunu ZIP indir</a>
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <thead><tr style="text-align:left;color:#64748b;font-size:12px;text-transform:uppercase">
-              <th style="padding:6px 4px">Kategori</th><th>Dosya</th><th>Boyut</th><th>Yuklendi</th><th></th>
+          <div class="table-wrap compact-table">
+          <table>
+            <thead><tr>
+              <th>Kategori</th><th>Dosya</th><th>Boyut</th><th>Yuklendi</th><th></th>
             </tr></thead>
             <tbody>
               <?php foreach ($attachments as $att): ?>
-                <tr style="border-top:1px solid #e2e8f0">
-                  <td style="padding:6px 4px"><span style="background:#e2e8f0;border-radius:9999px;padding:2px 8px;font-size:11px;font-weight:600"><?= e(attachment_category_label($att['category'])) ?></span></td>
-                  <td style="padding:6px 4px"><?= e($att['original_name']) ?></td>
-                  <td style="padding:6px 4px"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
-                  <td style="padding:6px 4px;font-size:12px;color:#64748b"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
-                  <td style="padding:6px 4px;text-align:right;white-space:nowrap">
+                <tr>
+                  <td><span class="type-badge"><?= e(attachment_category_label($att['category'])) ?></span></td>
+                  <td><?= e($att['original_name']) ?></td>
+                  <td><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
+                  <td class="muted-cell"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
+                  <td class="row-actions">
                     <?php if (attachment_can_preview($att['mime_type'])): ?>
-                      <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener" style="color:#475569;margin-right:8px">Goruntule</a>
+                      <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener">Goruntule</a>
                     <?php endif; ?>
-                    <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>" style="color:#2563eb">Indir</a>
-                    <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" style="display:inline;margin-left:8px" onsubmit="return confirm('Dosyayi sil?');">
+                    <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>">Indir</a>
+                    <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" onsubmit="return confirm('Dosyayi sil?');">
                       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                       <input type="hidden" name="id" value="<?= (int)$att['id'] ?>">
                       <input type="hidden" name="record_id" value="<?= (int)$id ?>">
-                      <button type="submit" style="color:#dc2626;background:none;border:none;cursor:pointer;font-size:14px">Sil</button>
+                      <button class="link-danger" type="submit">Sil</button>
                     </form>
                   </td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
           </table>
+          </div>
         </section>
       <?php endif; ?>
     </section>
@@ -294,13 +308,13 @@ try {
     const cats = <?= json_encode(attachment_categories(), JSON_UNESCAPED_UNICODE) ?>;
     function row() {
       const div = document.createElement('div');
-      div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px';
+      div.className = 'attach-row';
       let opts = '';
       for (const k in cats) opts += `<option value="${k}">${cats[k]}</option>`;
       div.innerHTML = `
-        <select name="attachment_categories[]" style="height:32px;padding:0 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">${opts}</select>
-        <input type="file" name="attachments[]" style="flex:1;height:32px;padding:0 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
-        <button type="button" style="height:30px;padding:0 10px;font-size:12px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer">Kaldir</button>
+        <select name="attachment_categories[]">${opts}</select>
+        <input type="file" name="attachments[]">
+        <button type="button" class="btn-secondary">Kaldir</button>
       `;
       div.querySelector('button').addEventListener('click', () => div.remove());
       wrap.appendChild(div);
