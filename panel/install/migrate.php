@@ -205,6 +205,9 @@ try {
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_start_date', 'policy_start_date DATE NULL AFTER service_exit_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_end_date',   'policy_end_date DATE NULL AFTER policy_start_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_reminder_sent_at', 'policy_reminder_sent_at DATETIME NULL AFTER policy_end_date', $log);
+    add_column_if_missing($pdo, $dbName, 'service_records', 'return_count', 'return_count INT UNSIGNED NOT NULL DEFAULT 1 AFTER policy_reminder_sent_at', $log);
+    add_column_if_missing($pdo, $dbName, 'service_records', 'last_return_at', 'last_return_at DATETIME NULL AFTER return_count', $log);
+    add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_plate_index', 'INDEX service_records_plate_index (plate)', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'insurance_type', "insurance_type ENUM('kasko','trafik','filo','ucretli') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
     modify_column_if_needed($pdo, $dbName, 'service_records', 'insurance_type', "enum('kasko','trafik','filo','ucretli')", "insurance_type ENUM('kasko','trafik','filo','ucretli') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_policy_end_index', 'INDEX service_records_policy_end_index (policy_end_date)', $log);

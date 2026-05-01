@@ -15,6 +15,10 @@ if (!$record) {
     exit('Kayit bulunamadi.');
 }
 
+$returnCount = (int)($record['return_count'] ?? 1);
+$lastReturnAt = $record['last_return_at'] ?? null;
+$isReturning = $returnCount > 1;
+
 $today = new DateTimeImmutable('today');
 $policyEnd = !empty($record['policy_end_date']) ? new DateTimeImmutable($record['policy_end_date']) : null;
 $daysToPolicyEnd = $policyEnd ? (int)$today->diff($policyEnd)->format('%r%a') : null;
@@ -61,7 +65,12 @@ unset($_SESSION['flash_error']);
       <div class="detail-hero">
         <div>
           <div class="kicker">Detayli goruntuleme</div>
-          <h2><?= e($record['plate']) ?> &mdash; <?= e($record['customer_name']) ?></h2>
+          <h2>
+            <?= e($record['plate']) ?> &mdash; <?= e($record['customer_name']) ?>
+            <?php if ($isReturning): ?>
+              <span class="pill status-yellow" style="margin-left:8px;vertical-align:middle" title="Bu arac daha once de servise gelmis"><?= e($returnCount) ?>. ziyaret</span>
+            <?php endif; ?>
+          </h2>
           <p style="font-size:12px;color:var(--muted);margin-top:3px;font-family:'IBM Plex Mono',monospace">Kayit no: <?= e($record['record_no']) ?></p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -90,6 +99,19 @@ unset($_SESSION['flash_error']);
               <?php else: ?>
                 <span class="pill status-green" style="margin-left:6px"><?= e($daysToPolicyEnd) ?> gun kaldi</span>
               <?php endif; ?>
+            <?php endif; ?>
+          </dd>
+        </div>
+        <div class="detail-item">
+          <dt>Tekrar Gelis</dt>
+          <dd>
+            <?php if ($isReturning): ?>
+              <span class="pill status-yellow"><?= e($returnCount) ?> kez gelmis</span>
+              <?php if ($lastReturnAt): ?>
+                <span style="margin-left:6px;font-size:12px;color:var(--muted)">Son: <?= e(format_tr_datetime($lastReturnAt)) ?></span>
+              <?php endif; ?>
+            <?php else: ?>
+              <span class="pill status-green">Ilk gelis</span>
             <?php endif; ?>
           </dd>
         </div>

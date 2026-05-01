@@ -88,6 +88,11 @@ function import_excel_file(string $path, string $sourceName): array
                     continue;
                 }
 
+                if (mark_existing_plate_return($pdo, (string)$record['plate'])) {
+                    $skipped++;
+                    continue;
+                }
+
                 upsert_service_record($pdo, $record);
                 $imported++;
                 $sheetImported++;
@@ -288,6 +293,45 @@ function upsert_service_record(PDO $pdo, array $record): void
         $params[':insurance_type'] = $record['insurance_type'] ?? infer_insurance_type_from_company((string)$record['insurance_company']);
     }
     $stmt->execute($params);
+}
+
+/**
+ * Ayni plakali kayit varsa, en eski (orijinal) kaydin return_count
+ * sayacini artirir, last_return_at'i guncel zamana ceker ve true doner.
+ * Yoksa false donerek normal insert akisini surdurur.
+ */
+function mark_existing_plate_return(PDO $pdo, string $plate): bool
+{
+    $plate = trim($plate);
+    if ($plate === '' || !importer_return_columns_exist($pdo)) {
+        return false;
+    }
+
+    $find = $pdo->prepare('SELECT id FROM service_records WHERE plate = ? ORDER BY service_entry_date ASC, id ASC LIMIT 1');
+    $find->execute([$plate]);
+    $existingId = (int)($find->fetchColumn() ?: 0);
+    if ($existingId === 0) {
+        return false;
+    }
+
+    $update = $pdo->prepare('UPDATE service_records SET return_count = COALESCE(return_count, 1) + 1, last_return_at = NOW(), updated_at = NOW() WHERE id = ?');
+    $update->execute([$existingId]);
+    return true;
+}
+
+function importer_return_columns_exist(PDO $pdo): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+    try {
+        $pdo->query('SELECT return_count, last_return_at FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+    return $exists;
 }
 
 function importer_insurance_type_column_exists(PDO $pdo): bool
