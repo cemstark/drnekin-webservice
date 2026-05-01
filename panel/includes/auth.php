@@ -88,7 +88,7 @@ function render_current_user_badge(): void
     ?>
     <span class="user-badge">
       <?php if ($photoUrl !== null): ?>
-        <img src="<?= e($photoUrl) ?>" alt="<?= e($name) ?>" class="user-avatar" width="28" height="28" style="width:28px;height:28px;max-width:28px;max-height:28px;border-radius:9999px;object-fit:cover;flex:0 0 auto;">
+        <img src="<?= e($photoUrl) ?>" alt="<?= e($name) ?>" class="user-avatar" width="42" height="42" style="width:42px;height:42px;max-width:42px;max-height:42px;border-radius:9999px;object-fit:cover;flex:0 0 auto;">
       <?php endif; ?>
       <span><?= e($name) ?></span>
     </span>
