@@ -27,6 +27,23 @@ function edit_date_value(mixed $value): ?string
     return $value === '' ? null : $value;
 }
 
+function edit_policy_reminder_column_exists(): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        db()->query('SELECT policy_reminder_sent_at FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $fields = [
@@ -46,8 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Plaka, ad soyad ve giris tarihi zorunludur.';
     } else {
         $fields['repair_status'] = $fields['repair_status'] ?: 'Belirtilmedi';
-        $update = db()->prepare(
-            'UPDATE service_records SET
+        $resetPolicyReminder = edit_policy_reminder_column_exists()
+            && ((string)($record['policy_end_date'] ?? '') !== (string)($fields['policy_end_date'] ?? ''));
+        $sql = 'UPDATE service_records SET
              plate = :plate,
              customer_name = :customer_name,
              insurance_company = :insurance_company,
@@ -59,9 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              policy_start_date = :policy_start_date,
              policy_end_date = :policy_end_date,
              service_month = :service_month,
-             updated_at = NOW()
-             WHERE id = :id'
-        );
+             updated_at = NOW()'
+             . ($resetPolicyReminder ? ', policy_reminder_sent_at = NULL' : '')
+             . ' WHERE id = :id';
+        $update = db()->prepare($sql);
         $update->execute([
             ':plate' => $fields['plate'],
             ':customer_name' => $fields['customer_name'],

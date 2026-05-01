@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   service_exit_date DATE NULL,
   policy_start_date DATE NULL,
   policy_end_date DATE NULL,
+  policy_reminder_sent_at DATETIME NULL,
   service_month CHAR(7) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -77,4 +78,13 @@ CREATE TABLE IF NOT EXISTS pending_excel_updates (
   PRIMARY KEY (id),
   KEY pending_excel_updates_status_index (status),
   KEY pending_excel_updates_record_no_index (record_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS cron_runs (
+  job_key VARCHAR(60) NOT NULL,
+  last_run_date DATE NOT NULL,
+  last_run_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_status VARCHAR(20) NOT NULL DEFAULT 'ok',
+  last_payload TEXT NULL,
+  PRIMARY KEY (job_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

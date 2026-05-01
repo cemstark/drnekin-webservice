@@ -66,6 +66,7 @@ function create_table_if_missing(PDO $pdo, string $db, string $table, string $cr
 try {
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_start_date', 'policy_start_date DATE NULL AFTER service_exit_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_end_date',   'policy_end_date DATE NULL AFTER policy_start_date', $log);
+    add_column_if_missing($pdo, $dbName, 'service_records', 'policy_reminder_sent_at', 'policy_reminder_sent_at DATETIME NULL AFTER policy_end_date', $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_policy_end_index', 'INDEX service_records_policy_end_index (policy_end_date)', $log);
 
     create_table_if_missing($pdo, $dbName, 'service_attachments',
@@ -84,6 +85,18 @@ try {
             KEY service_attachments_category_index (category),
             CONSTRAINT service_attachments_record_fk FOREIGN KEY (record_id) REFERENCES service_records(id) ON DELETE CASCADE,
             CONSTRAINT service_attachments_user_fk FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        $log
+    );
+
+    create_table_if_missing($pdo, $dbName, 'cron_runs',
+        "CREATE TABLE cron_runs (
+            job_key VARCHAR(60) NOT NULL,
+            last_run_date DATE NOT NULL,
+            last_run_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_status VARCHAR(20) NOT NULL DEFAULT 'ok',
+            last_payload TEXT NULL,
+            PRIMARY KEY (job_key)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         $log
     );
