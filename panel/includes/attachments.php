@@ -94,38 +94,123 @@ function attachment_validate_upload(array $file): array
     return $errors;
 }
 
+function attachment_storage_root(): string
+{
+    return dirname(__DIR__) . '/storage';
+}
+
+function attachment_storage_dir(int $recordId): string
+{
+    return attachment_storage_root() . '/attachments/' . $recordId;
+}
+
+function attachment_column_exists(string $column): bool
+{
+    static $cache = [];
+    if (array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+
+    try {
+        db()->query('SELECT ' . $column . ' FROM service_attachments LIMIT 0');
+        $cache[$column] = true;
+    } catch (Throwable $e) {
+        $cache[$column] = false;
+    }
+
+    return $cache[$column];
+}
+
+function attachment_safe_original_name(string $name): string
+{
+    $name = trim($name) !== '' ? trim($name) : 'dosya';
+    $name = preg_replace('/[\\\\\/:*?"<>|]+/u', '_', $name) ?: 'dosya';
+    return mb_substr($name, 0, 180);
+}
+
+function attachment_make_relative_path(int $recordId, string $originalName): string
+{
+    $safeName = attachment_safe_original_name($originalName);
+    $ext = pathinfo($safeName, PATHINFO_EXTENSION);
+    $ext = preg_replace('/[^A-Za-z0-9]+/', '', (string)$ext);
+    $suffix = $ext !== '' ? '.' . strtolower($ext) : '';
+    return 'attachments/' . $recordId . '/' . bin2hex(random_bytes(16)) . $suffix;
+}
+
+function attachment_absolute_path(?string $relativePath): ?string
+{
+    $relativePath = str_replace('\\', '/', trim((string)$relativePath));
+    $relativePath = ltrim($relativePath, '/');
+    if ($relativePath === '' || str_contains($relativePath, '..') || !str_starts_with($relativePath, 'attachments/')) {
+        return null;
+    }
+
+    return attachment_storage_root() . '/' . $relativePath;
+}
+
+function attachment_ensure_storage(int $recordId): void
+{
+    $dir = attachment_storage_dir($recordId);
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Dosya klasoru olusturulamadi.');
+    }
+
+    $deny = attachment_storage_root() . '/attachments/.htaccess';
+    if (!is_file($deny)) {
+        @mkdir(dirname($deny), 0775, true);
+        @file_put_contents($deny, "Require all denied\n");
+    }
+}
+
 function attachment_save(int $recordId, array $file, string $category, ?int $userId): int
 {
     if (!attachment_category_valid($category)) {
         $category = 'diger';
     }
+
     $tmp = (string)$file['tmp_name'];
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = (string)$finfo->file($tmp);
-    $data = file_get_contents($tmp);
-    if ($data === false) {
-        throw new RuntimeException('Dosya okunamadi.');
-    }
-    $original = (string)($file['name'] ?? 'dosya');
-    $original = mb_substr($original, 0, 250);
+    $original = attachment_safe_original_name((string)($file['name'] ?? 'dosya'));
+    $size = (int)($file['size'] ?? filesize($tmp));
 
-    $stmt = db()->prepare(
-        'INSERT INTO service_attachments
-         (record_id, category, original_name, mime_type, file_size, file_data, uploaded_by)
-         VALUES (:record_id, :category, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)'
-    );
-    $stmt->bindValue(':record_id', $recordId, PDO::PARAM_INT);
-    $stmt->bindValue(':category', $category);
-    $stmt->bindValue(':original_name', $original);
-    $stmt->bindValue(':mime_type', $mime);
-    $stmt->bindValue(':file_size', strlen($data), PDO::PARAM_INT);
-    $stmt->bindValue(':file_data', $data, PDO::PARAM_LOB);
-    if ($userId === null) {
-        $stmt->bindValue(':uploaded_by', null, PDO::PARAM_NULL);
-    } else {
-        $stmt->bindValue(':uploaded_by', $userId, PDO::PARAM_INT);
+    if (!attachment_column_exists('file_path')) {
+        throw new RuntimeException('Belge depolama migration gerektiriyor.');
     }
-    $stmt->execute();
+
+    attachment_ensure_storage($recordId);
+    $relativePath = attachment_make_relative_path($recordId, $original);
+    $absolutePath = attachment_absolute_path($relativePath);
+    if ($absolutePath === null) {
+        throw new RuntimeException('Gecersiz dosya yolu.');
+    }
+    if (!move_uploaded_file($tmp, $absolutePath)) {
+        throw new RuntimeException('Dosya depoya tasinamadi.');
+    }
+
+    try {
+        $stmt = db()->prepare(
+            'INSERT INTO service_attachments
+             (record_id, category, original_name, mime_type, file_size, file_path, uploaded_by)
+             VALUES (:record_id, :category, :original_name, :mime_type, :file_size, :file_path, :uploaded_by)'
+        );
+        $stmt->bindValue(':record_id', $recordId, PDO::PARAM_INT);
+        $stmt->bindValue(':category', $category);
+        $stmt->bindValue(':original_name', $original);
+        $stmt->bindValue(':mime_type', $mime);
+        $stmt->bindValue(':file_size', $size, PDO::PARAM_INT);
+        $stmt->bindValue(':file_path', $relativePath);
+        if ($userId === null) {
+            $stmt->bindValue(':uploaded_by', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':uploaded_by', $userId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+    } catch (Throwable $e) {
+        @unlink($absolutePath);
+        throw $e;
+    }
+
     return (int)db()->lastInsertId();
 }
 
@@ -155,26 +240,57 @@ function attachment_fetch_meta(int $attachmentId): ?array
     return $row ?: null;
 }
 
+function attachment_data_for_row(array $row): string
+{
+    $path = attachment_absolute_path($row['file_path'] ?? null);
+    if ($path !== null && is_file($path)) {
+        $data = file_get_contents($path);
+        if ($data !== false) {
+            return $data;
+        }
+    }
+
+    if (array_key_exists('file_data', $row)) {
+        $data = $row['file_data'];
+        if (is_resource($data)) {
+            $data = stream_get_contents($data);
+        }
+        return (string)$data;
+    }
+
+    throw new RuntimeException('Dosya depoda bulunamadi.');
+}
+
 function attachment_stream(int $attachmentId, bool $forceDownload = true): void
 {
-    $stmt = db()->prepare('SELECT original_name, mime_type, file_size, file_data FROM service_attachments WHERE id = ?');
+    $fields = 'original_name, mime_type, file_size';
+    if (attachment_column_exists('file_path')) {
+        $fields .= ', file_path';
+    }
+    if (attachment_column_exists('file_data')) {
+        $fields .= ', file_data';
+    }
+
+    $stmt = db()->prepare("SELECT $fields FROM service_attachments WHERE id = ?");
     $stmt->execute([$attachmentId]);
-    $stmt->bindColumn(1, $name);
-    $stmt->bindColumn(2, $mime);
-    $stmt->bindColumn(3, $size, PDO::PARAM_INT);
-    $stmt->bindColumn(4, $data, PDO::PARAM_LOB);
-    if (!$stmt->fetch(PDO::FETCH_BOUND)) {
+    $row = $stmt->fetch();
+    if (!$row) {
         http_response_code(404);
         exit('Dosya bulunamadi.');
     }
-    if (is_resource($data)) {
-        $data = stream_get_contents($data);
+
+    try {
+        $data = attachment_data_for_row($row);
+    } catch (Throwable $e) {
+        http_response_code(404);
+        exit('Dosya depoda bulunamadi.');
     }
+
     while (ob_get_level() > 0) { ob_end_clean(); }
-    header('Content-Type: ' . ($mime ?: 'application/octet-stream'));
-    header('Content-Length: ' . strlen((string)$data));
+    header('Content-Type: ' . ($row['mime_type'] ?: 'application/octet-stream'));
+    header('Content-Length: ' . strlen($data));
     $disposition = $forceDownload ? 'attachment' : 'inline';
-    $safeName = preg_replace('/[\r\n"]+/', '_', (string)$name);
+    $safeName = preg_replace('/[\r\n"]+/', '_', (string)$row['original_name']);
     header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
     header('X-Content-Type-Options: nosniff');
     header('Cache-Control: private, max-age=0, must-revalidate');
@@ -184,7 +300,19 @@ function attachment_stream(int $attachmentId, bool $forceDownload = true): void
 
 function attachment_delete(int $attachmentId): bool
 {
+    $path = null;
+    if (attachment_column_exists('file_path')) {
+        $stmt = db()->prepare('SELECT file_path FROM service_attachments WHERE id = ?');
+        $stmt->execute([$attachmentId]);
+        $path = attachment_absolute_path($stmt->fetchColumn() ?: null);
+    }
+
     $stmt = db()->prepare('DELETE FROM service_attachments WHERE id = ?');
     $stmt->execute([$attachmentId]);
-    return $stmt->rowCount() > 0;
+    $deleted = $stmt->rowCount() > 0;
+    if ($deleted && $path !== null && is_file($path)) {
+        @unlink($path);
+    }
+
+    return $deleted;
 }

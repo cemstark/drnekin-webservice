@@ -42,9 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <div class="eyebrow">DRN</div>
-      <h1>Excel Yukle</h1>
+    <div class="topbar-brand">
+      <div class="brand-logo">DRN</div>
+      <span class="brand-name">Excel Yukle</span>
     </div>
     <nav>
       <?php render_current_user_badge(); ?>
@@ -54,44 +54,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </header>
 
   <main class="layout narrow">
-    <section class="table-card form-card">
-      <h2>Hasar Excel dosyasi</h2>
-      <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <label>
-          .xlsx dosyasi
-          <input type="file" name="excel" accept=".xlsx" required>
-        </label>
-        <button type="submit">Yukle ve aktar</button>
-      </form>
-
-      <?php if ($error !== ''): ?>
-        <div class="alert"><?= e($error) ?></div>
-      <?php endif; ?>
-
-      <?php if (is_array($result)): ?>
-        <div class="<?= $result['status'] === 'failed' ? 'alert' : 'success' ?>">
-          Durum: <?= e($result['status']) ?>,
-          aktarilan: <?= e($result['imported']) ?>,
-          atlanan: <?= e($result['skipped']) ?>.
+    <div class="form-card">
+      <div class="form-card-header">
+        <div>
+          <div class="kicker">Senkronizasyon</div>
+          <h2>Hasar Excel dosyasi</h2>
+          <p>Yalnizca .xlsx formati desteklenir</p>
         </div>
-        <?php if (!empty($result['errors'])): ?>
-          <pre class="error-list"><?= e(implode("\n", array_slice($result['errors'], 0, 20))) ?></pre>
+      </div>
+      <div class="form-card-body">
+        <form method="post" enctype="multipart/form-data" style="display:grid;gap:14px">
+          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <label style="display:grid;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">
+            .xlsx dosyasi
+            <input type="file" name="excel" accept=".xlsx" required>
+          </label>
+          <div>
+            <button type="submit">Yukle ve aktar</button>
+          </div>
+        </form>
+
+        <?php if ($error !== ''): ?>
+          <div class="alert" style="margin-top:16px"><?= e($error) ?></div>
         <?php endif; ?>
-      <?php endif; ?>
 
-      <?php if ($lastLog): ?>
-        <div class="log-note">
-          Son log: <?= e(format_tr_datetime($lastLog['created_at'] ?? null)) ?>,
-          durum <?= e($lastLog['status']) ?>,
-          aktarilan <?= e($lastLog['imported_count']) ?>,
-          atlanan <?= e($lastLog['skipped_count']) ?>.
-          <?php if (!empty($lastLog['error_summary'])): ?>
-            <pre class="error-list"><?= e($lastLog['error_summary']) ?></pre>
+        <?php if (is_array($result)): ?>
+          <div class="<?= $result['status'] === 'failed' ? 'alert' : 'success' ?>" style="margin-top:16px">
+            Durum: <?= e($result['status']) ?>, aktarilan: <?= e($result['imported']) ?>, atlanan: <?= e($result['skipped']) ?>.
+          </div>
+          <?php if (!empty($result['errors'])): ?>
+            <pre class="error-list"><?= e(implode("\n", array_slice($result['errors'], 0, 20))) ?></pre>
           <?php endif; ?>
-        </div>
-      <?php endif; ?>
-    </section>
+        <?php endif; ?>
+
+        <?php if ($lastLog): ?>
+          <div class="log-note">
+            Son log: <?= e(format_tr_datetime($lastLog['created_at'] ?? null)) ?>,
+            durum <?= e($lastLog['status']) ?>,
+            aktarilan <?= e($lastLog['imported_count']) ?>,
+            atlanan <?= e($lastLog['skipped_count']) ?>.
+            <?php if (!empty($lastLog['error_summary'])): ?>
+              <pre class="error-list"><?= e($lastLog['error_summary']) ?></pre>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
   </main>
 </body>
 </html>

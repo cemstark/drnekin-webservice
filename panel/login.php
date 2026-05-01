@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
 </head>
 <body class="login-page">
-  <main class="login-shell">
+  <div class="login-shell">
     <form class="login-card" method="post" action="<?= e(panel_url('login.php')) ?>">
       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
       <div class="brand">DRN</div>
@@ -45,6 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </label>
       <button type="submit">Giris yap</button>
     </form>
-  </main>
+  </div>
 </body>
 </html>

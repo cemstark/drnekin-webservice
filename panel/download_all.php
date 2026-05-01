@@ -37,7 +37,15 @@ if ($categoryFilter !== '' && !attachment_category_valid($categoryFilter)) {
     $categoryFilter = '';
 }
 
-$sql = 'SELECT id, category, original_name, mime_type, file_size, file_data FROM service_attachments WHERE record_id = :rid';
+$fields = 'id, category, original_name, mime_type, file_size';
+if (attachment_column_exists('file_path')) {
+    $fields .= ', file_path';
+}
+if (attachment_column_exists('file_data')) {
+    $fields .= ', file_data';
+}
+
+$sql = "SELECT $fields FROM service_attachments WHERE record_id = :rid";
 $params = [':rid' => $id];
 if ($categoryFilter !== '') {
     $sql .= ' AND category = :cat';
@@ -64,11 +72,12 @@ $used = [];
 $count = 0;
 
 while ($att = $q->fetch()) {
-    $count++;
-    $data = $att['file_data'];
-    if (is_resource($data)) {
-        $data = stream_get_contents($data);
+    try {
+        $data = attachment_data_for_row($att);
+    } catch (Throwable $e) {
+        continue;
     }
+    $count++;
     $name = (string)$att['original_name'];
     $name = preg_replace('/[\\\\\/:*?"<>|]+/u', '_', $name) ?: 'dosya';
     $folder = attachment_category_label($att['category']);

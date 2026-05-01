@@ -128,7 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             current_user()['id'] ?? null,
         ]);
 
-        // Yeni dosyalar (opsiyonel)
         if (!empty($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
             $count = count($_FILES['attachments']['name']);
             $cats = $_POST['attachment_categories'] ?? [];
@@ -178,13 +177,12 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kayit Duzenle - <?= e(panel_config('app_name')) ?></title>
   <link rel="stylesheet" href="<?= e(panel_asset_url('assets/panel.css')) ?>">
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <div class="eyebrow">DRN</div>
-      <h1>Kayit Duzenle</h1>
+    <div class="topbar-brand">
+      <div class="brand-logo">DRN</div>
+      <span class="brand-name">Kayit Duzenle</span>
     </div>
     <nav>
       <?php render_current_user_badge(); ?>
@@ -194,112 +192,118 @@ try {
     </nav>
   </header>
 
-  <main class="edit-shell mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-    <section class="edit-card table-card form-card">
-      <div class="edit-hero">
+  <main class="layout narrow">
+    <div class="form-card">
+      <div class="form-card-header">
         <div>
-          <p class="section-kicker">Kayit yonetimi</p>
-          <h2><?= e($record['plate']) ?> - <?= e($record['customer_name']) ?></h2>
-          <span>Kayit no: <?= e($record['record_no']) ?></span>
+          <div class="kicker">Kayit yonetimi</div>
+          <h2><?= e($record['plate']) ?> &mdash; <?= e($record['customer_name']) ?></h2>
+          <p style="font-family:'IBM Plex Mono',monospace">Kayit no: <?= e($record['record_no']) ?></p>
         </div>
         <a class="btn-secondary" href="<?= e(panel_url('view.php?id=' . $id)) ?>">Detaya don</a>
       </div>
-      <?php if ($saved): ?>
-        <div class="success">Kayit guncellendi. Excel senkron kuyruguna eklendi.</div>
-      <?php endif; ?>
-      <?php if ($uploadWarnings): ?>
-        <div class="alert">Bazi dosyalar yuklenemedi:
-          <ul class="message-list">
-            <?php foreach ($uploadWarnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?>
-          </ul>
-        </div>
-      <?php endif; ?>
-      <?php if ($error !== ''): ?>
-        <div class="alert"><?= e($error) ?></div>
-      <?php endif; ?>
-      <form method="post" enctype="multipart/form-data" class="edit-form">
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <div class="form-grid">
-        <label>Plaka <input name="plate" value="<?= e($record['plate']) ?>" required></label>
-        <label>Ad Soyad <input name="customer_name" value="<?= e($record['customer_name']) ?>" required></label>
-        <label>Arac Filtresi
-          <select name="insurance_type">
-            <?php $selectedType = (string)($record['insurance_type'] ?? 'kasko'); ?>
-            <?php foreach (insurance_type_options() as $key => $label): ?>
-              <option value="<?= e($key) ?>" <?= $selectedType === $key ? 'selected' : '' ?>><?= e($label) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </label>
-        <label>Sigorta <input name="insurance_company" value="<?= e($record['insurance_company']) ?>"></label>
-        <label>Tamir Durumu
-          <select name="repair_status">
-            <?php if (!array_key_exists((string)$record['repair_status'], repair_status_options())): ?>
-              <option value="<?= e($record['repair_status']) ?>" selected><?= e($record['repair_status']) ?></option>
-            <?php endif; ?>
-            <?php foreach (repair_status_options() as $key => $label): ?>
-              <option value="<?= e($key) ?>" <?= (string)$record['repair_status'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </label>
-        <label class="check-row"><input type="checkbox" name="mini_repair_has" <?= (int)$record['mini_repair_has'] === 1 ? 'checked' : '' ?>> Mini onarim var</label>
-        <label>Mini Onarim Parca <input name="mini_repair_part" value="<?= e($record['mini_repair_part']) ?>"></label>
-        <label>Giris Tarihi <input type="date" name="service_entry_date" value="<?= e($record['service_entry_date']) ?>" required></label>
-        <label>Cikis Tarihi <input type="date" name="service_exit_date" value="<?= e($record['service_exit_date']) ?>"></label>
-        <label>Police Baslangic Tarihi <input type="date" name="policy_start_date" value="<?= e($record['policy_start_date'] ?? '') ?>"></label>
-        <label>Police Bitis Tarihi <input type="date" name="policy_end_date" value="<?= e($record['policy_end_date'] ?? '') ?>"></label>
-        </div>
+      <div class="form-card-body">
+        <?php if ($saved): ?>
+          <div class="success">Kayit guncellendi. Excel senkron kuyruguna eklendi.</div>
+        <?php endif; ?>
+        <?php if ($uploadWarnings): ?>
+          <div class="alert">Bazi dosyalar yuklenemedi:
+            <ul style="margin:6px 0 0 18px">
+              <?php foreach ($uploadWarnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endif; ?>
+        <?php if ($error !== ''): ?>
+          <div class="alert"><?= e($error) ?></div>
+        <?php endif; ?>
 
-        <fieldset class="upload-panel edit-upload">
-          <legend>Belge / Fotograf ekle (opsiyonel)</legend>
-          <p>Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
-          <div id="attach-rows"></div>
-          <button type="button" id="attach-add-row" class="btn-secondary attach-add">+ Satir ekle</button>
-        </fieldset>
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <div class="form-grid">
+            <label>Plaka <input name="plate" value="<?= e($record['plate']) ?>" required></label>
+            <label>Ad Soyad <input name="customer_name" value="<?= e($record['customer_name']) ?>" required></label>
+            <label>Arac Filtresi
+              <select name="insurance_type">
+                <?php $selectedType = (string)($record['insurance_type'] ?? 'kasko'); ?>
+                <?php foreach (insurance_type_options() as $key => $label): ?>
+                  <option value="<?= e($key) ?>" <?= $selectedType === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <label>Sigorta <input name="insurance_company" value="<?= e($record['insurance_company']) ?>"></label>
+            <label>Tamir Durumu
+              <select name="repair_status">
+                <?php if (!array_key_exists((string)$record['repair_status'], repair_status_options())): ?>
+                  <option value="<?= e($record['repair_status']) ?>" selected><?= e($record['repair_status']) ?></option>
+                <?php endif; ?>
+                <?php foreach (repair_status_options() as $key => $label): ?>
+                  <option value="<?= e($key) ?>" <?= (string)$record['repair_status'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" name="mini_repair_has" <?= (int)$record['mini_repair_has'] === 1 ? 'checked' : '' ?>>
+              <span>Mini onarim var</span>
+            </label>
+            <label>Mini Onarim Parca <input name="mini_repair_part" value="<?= e($record['mini_repair_part']) ?>"></label>
+            <label>Giris Tarihi <input type="date" name="service_entry_date" value="<?= e($record['service_entry_date']) ?>" required></label>
+            <label>Cikis Tarihi <input type="date" name="service_exit_date" value="<?= e($record['service_exit_date']) ?>"></label>
+            <label>Police Baslangic <input type="date" name="policy_start_date" value="<?= e($record['policy_start_date'] ?? '') ?>"></label>
+            <label>Police Bitis <input type="date" name="policy_end_date" value="<?= e($record['policy_end_date'] ?? '') ?>"></label>
+          </div>
 
-        <div class="form-actions">
-          <a class="btn-secondary" href="<?= e(panel_url('view.php?id=' . $id)) ?>">Vazgec</a>
-          <button class="btn-primary" type="submit">Kaydet</button>
-        </div>
-      </form>
+          <fieldset class="edit-upload" style="margin-top:20px">
+            <legend>Belge / Fotograf ekle (opsiyonel)</legend>
+            <p>Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
+            <div id="attach-rows"></div>
+            <button type="button" id="attach-add-row" class="btn-secondary attach-add">+ Satir ekle</button>
+          </fieldset>
+
+          <div class="form-actions">
+            <a class="btn-secondary" href="<?= e(panel_url('view.php?id=' . $id)) ?>">Vazgec</a>
+            <button class="btn-primary" type="submit">Kaydet</button>
+          </div>
+        </form>
+      </div>
 
       <?php if ($attachmentsAvailable && $attachments !== []): ?>
-        <section class="edit-attachments">
+        <div class="edit-attachments">
           <div class="edit-section-head">
             <h3>Mevcut belgeler &amp; fotograflar</h3>
             <a class="btn-soft" href="<?= e(panel_url('download_all.php?id=' . $id)) ?>">Tumunu ZIP indir</a>
           </div>
           <div class="table-wrap compact-table">
-          <table>
-            <thead><tr>
-              <th>Kategori</th><th>Dosya</th><th>Boyut</th><th>Yuklendi</th><th></th>
-            </tr></thead>
-            <tbody>
-              <?php foreach ($attachments as $att): ?>
-                <tr>
-                  <td><span class="type-badge"><?= e(attachment_category_label($att['category'])) ?></span></td>
-                  <td><?= e($att['original_name']) ?></td>
-                  <td><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
-                  <td class="muted-cell"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
-                  <td class="row-actions">
-                    <?php if (attachment_can_preview($att['mime_type'])): ?>
-                      <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener">Goruntule</a>
-                    <?php endif; ?>
-                    <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>">Indir</a>
-                    <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" onsubmit="return confirm('Dosyayi sil?');">
-                      <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                      <input type="hidden" name="id" value="<?= (int)$att['id'] ?>">
-                      <input type="hidden" name="record_id" value="<?= (int)$id ?>">
-                      <button class="link-danger" type="submit">Sil</button>
-                    </form>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+            <table>
+              <thead><tr>
+                <th>Kategori</th><th>Dosya</th><th>Boyut</th><th>Yuklendi</th><th></th>
+              </tr></thead>
+              <tbody>
+                <?php foreach ($attachments as $att): ?>
+                  <tr>
+                    <td><span class="type-badge"><?= e(attachment_category_label($att['category'])) ?></span></td>
+                    <td><?= e($att['original_name']) ?></td>
+                    <td class="muted-cell"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
+                    <td class="muted-cell"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
+                    <td class="row-actions">
+                      <?php if (attachment_can_preview($att['mime_type'])): ?>
+                        <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener">Goruntule</a>
+                      <?php endif; ?>
+                      <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>">Indir</a>
+                      <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" onsubmit="return confirm('Dosyayi sil?');">
+                        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="id" value="<?= (int)$att['id'] ?>">
+                        <input type="hidden" name="record_id" value="<?= (int)$id ?>">
+                        <button class="link-danger" type="submit">Sil</button>
+                      </form>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
           </div>
-        </section>
+        </div>
       <?php endif; ?>
-    </section>
+    </div>
   </main>
 
   <script>
@@ -315,7 +319,7 @@ try {
       div.innerHTML = `
         <select name="attachment_categories[]">${opts}</select>
         <input type="file" name="attachments[]">
-        <button type="button" class="btn-secondary">Kaldir</button>
+        <button type="button" class="btn-secondary" style="height:36px;font-size:12px">Kaldir</button>
       `;
       div.querySelector('button').addEventListener('click', () => div.remove());
       wrap.appendChild(div);

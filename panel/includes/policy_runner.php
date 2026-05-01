@@ -223,17 +223,3 @@ function policy_reminder_email_html(array $record, int $daysLeft): string
         . '<p style="margin:16px 0 0;color:#64748b;font-size:12px">Bu e-posta DRN Servis Paneli tarafindan otomatik olusturulmustur.</p>'
         . '</div>';
 }
-
-function fire_policy_reminder_async(): void
-{
-    register_shutdown_function(static function (): void {
-        if (function_exists('fastcgi_finish_request')) {
-            @fastcgi_finish_request();
-        }
-
-        try {
-            maybe_run_policy_reminder();
-        } catch (Throwable $e) {
-        }
-    });
-}
