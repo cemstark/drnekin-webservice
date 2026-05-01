@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   plate VARCHAR(40) NOT NULL,
   customer_name VARCHAR(180) NOT NULL,
   insurance_company VARCHAR(180) NOT NULL DEFAULT '',
-  insurance_type ENUM('kasko','trafik','filo') NOT NULL DEFAULT 'kasko',
+  insurance_type ENUM('kasko','trafik','filo','ucretli') NOT NULL DEFAULT 'kasko',
   repair_status VARCHAR(120) NOT NULL DEFAULT 'Belirtilmedi',
   mini_repair_has TINYINT(1) NOT NULL DEFAULT 0,
   mini_repair_part VARCHAR(180) NOT NULL DEFAULT '',

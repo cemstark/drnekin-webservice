@@ -63,6 +63,7 @@ function import_excel_file(string $path, string $sourceName): array
                     'service_entry_date' => $entryDate,
                     'service_exit_date' => normalize_date(cell($row, $map, 'service_exit_date')),
                 ];
+                $record['insurance_type'] = infer_insurance_type_from_company($record['insurance_company']);
 
                 if ($record['record_no'] === '') {
                     $record['record_no'] = generated_record_no(
@@ -251,14 +252,16 @@ function validate_record(array $record): array
 function upsert_service_record(PDO $pdo, array $record): void
 {
     $month = substr((string)$record['service_entry_date'], 0, 7);
+    $hasInsuranceType = importer_insurance_type_column_exists($pdo);
     $stmt = $pdo->prepare(
         'INSERT INTO service_records
-        (record_no, plate, customer_name, insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, service_month, updated_at)
+        (record_no, plate, customer_name, ' . ($hasInsuranceType ? 'insurance_type, ' : '') . 'insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, service_month, updated_at)
         VALUES
-        (:record_no, :plate, :customer_name, :insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :service_month, NOW())
+        (:record_no, :plate, :customer_name, ' . ($hasInsuranceType ? ':insurance_type, ' : '') . ':insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :service_month, NOW())
         ON DUPLICATE KEY UPDATE
         plate = VALUES(plate),
         customer_name = VALUES(customer_name),
+        ' . ($hasInsuranceType ? 'insurance_type = VALUES(insurance_type),' : '') . '
         insurance_company = VALUES(insurance_company),
         repair_status = VALUES(repair_status),
         mini_repair_has = VALUES(mini_repair_has),
@@ -269,7 +272,7 @@ function upsert_service_record(PDO $pdo, array $record): void
         updated_at = NOW()'
     );
 
-    $stmt->execute([
+    $params = [
         ':record_no' => $record['record_no'],
         ':plate' => $record['plate'],
         ':customer_name' => $record['customer_name'],
@@ -280,7 +283,28 @@ function upsert_service_record(PDO $pdo, array $record): void
         ':service_entry_date' => $record['service_entry_date'],
         ':service_exit_date' => $record['service_exit_date'],
         ':service_month' => $month,
-    ]);
+    ];
+    if ($hasInsuranceType) {
+        $params[':insurance_type'] = $record['insurance_type'] ?? infer_insurance_type_from_company((string)$record['insurance_company']);
+    }
+    $stmt->execute($params);
+}
+
+function importer_insurance_type_column_exists(PDO $pdo): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        $pdo->query('SELECT insurance_type FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
 }
 
 function import_log_result(string $sourceName, int $imported, int $skipped, array $errors, float $started): array

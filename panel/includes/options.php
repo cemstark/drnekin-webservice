@@ -44,6 +44,7 @@ function insurance_type_options(): array
         'kasko' => 'Kasko',
         'trafik' => 'Trafik',
         'filo' => 'Filo',
+        'ucretli' => 'Ucretli',
     ];
 }
 
@@ -56,6 +57,22 @@ function insurance_type_label(?string $type): string
 function valid_insurance_type(?string $type): bool
 {
     return array_key_exists((string)$type, insurance_type_options());
+}
+
+function infer_insurance_type_from_company(string $company): string
+{
+    $key = function_exists('mb_strtolower') ? mb_strtolower($company, 'UTF-8') : strtolower($company);
+    if (str_contains($key, 'filo')) {
+        return 'filo';
+    }
+    if (str_contains($key, 'trafik')) {
+        return 'trafik';
+    }
+    if (str_contains($key, 'ucret') || str_contains($key, 'ücret')) {
+        return 'ucretli';
+    }
+
+    return 'kasko';
 }
 
 function format_tr_date(?string $value, string $fallback = '-'): string

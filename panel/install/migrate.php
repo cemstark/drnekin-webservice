@@ -63,6 +63,19 @@ function create_table_if_missing(PDO $pdo, string $db, string $table, string $cr
     }
 }
 
+function modify_column_if_needed(PDO $pdo, string $db, string $table, string $col, string $expectedType, string $defSql, array &$log): void
+{
+    $stmt = $pdo->prepare('SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?');
+    $stmt->execute([$db, $table, $col]);
+    $currentType = (string)($stmt->fetchColumn() ?: '');
+    if (strtolower($currentType) !== strtolower($expectedType)) {
+        $pdo->exec("ALTER TABLE `$table` MODIFY COLUMN $defSql");
+        $log[] = "~ kolon guncellendi: $table.$col";
+    } else {
+        $log[] = "  kolon tipi zaten guncel: $table.$col";
+    }
+}
+
 function upsert_user(PDO $pdo, string $username, string $fullName, string $password, array &$log): void
 {
     $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -86,9 +99,15 @@ try {
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_start_date', 'policy_start_date DATE NULL AFTER service_exit_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_end_date',   'policy_end_date DATE NULL AFTER policy_start_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_reminder_sent_at', 'policy_reminder_sent_at DATETIME NULL AFTER policy_end_date', $log);
-    add_column_if_missing($pdo, $dbName, 'service_records', 'insurance_type', "insurance_type ENUM('kasko','trafik','filo') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
+    add_column_if_missing($pdo, $dbName, 'service_records', 'insurance_type', "insurance_type ENUM('kasko','trafik','filo','ucretli') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
+    modify_column_if_needed($pdo, $dbName, 'service_records', 'insurance_type', "enum('kasko','trafik','filo','ucretli')", "insurance_type ENUM('kasko','trafik','filo','ucretli') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_policy_end_index', 'INDEX service_records_policy_end_index (policy_end_date)', $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_insurance_type_index', 'INDEX service_records_insurance_type_index (insurance_type)', $log);
+
+    $pdo->exec("UPDATE service_records SET insurance_type = 'filo' WHERE insurance_company LIKE '%filo%'");
+    $pdo->exec("UPDATE service_records SET insurance_type = 'trafik' WHERE insurance_company LIKE '%trafik%'");
+    $pdo->exec("UPDATE service_records SET insurance_type = 'ucretli' WHERE insurance_company LIKE '%ucret%' OR insurance_company LIKE '%ücret%'");
+    $log[] = "  arac filtre tipleri sigorta metnine gore eslestirildi";
 
     create_table_if_missing($pdo, $dbName, 'service_attachments',
         "CREATE TABLE service_attachments (
