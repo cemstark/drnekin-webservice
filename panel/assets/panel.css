@@ -356,3 +356,151 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.glass-panel {
+  background: rgba(255, 255, 255, .66);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .08);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 800;
+  transition: .18s ease;
+}
+
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  border-color: rgba(255, 255, 255, .8);
+  background: rgba(255, 255, 255, .74);
+  color: #0f172a;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .07);
+}
+
+.bento-card {
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .86);
+  padding: 22px;
+  box-shadow: 0 18px 55px rgba(15, 23, 42, .07);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
+}
+
+.metric-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.vehicle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 104px;
+  padding: 16px;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(248,250,252,.78));
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.vehicle-row:hover {
+  border-color: rgba(59, 130, 246, .28);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .08);
+  transform: translateY(-1px);
+}
+
+.icon-action {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  background: #fff;
+  color: #475569;
+}
+
+.icon-action.blue {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.icon-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.chip.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.chip span {
+  min-width: 22px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  color: #64748b;
+  text-align: center;
+}
+
+.gallery-tile {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 170px;
+  border: 1px solid rgba(226, 232, 240, .9);
+  border-radius: 24px;
+  padding: 0;
+  background: #e2e8f0;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, .08);
+}
+
+@media (max-width: 900px) {
+  .vehicle-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
