@@ -100,7 +100,14 @@ unset($_SESSION['flash_error']);
     <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div class="border-b border-slate-200 bg-slate-50 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <h3 class="text-lg font-bold text-slate-950">Belgeler &amp; Fotograflar</h3>
-        <span class="text-xs text-slate-500"><?= count($attachments) ?> dosya</span>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-500"><?= count($attachments) ?> dosya</span>
+          <?php if ($attachmentsAvailable && count($attachments) > 0): ?>
+            <a href="<?= e(panel_url('download_all.php?id=' . $id . ($categoryFilter !== '' ? '&cat=' . $categoryFilter : ''))) ?>" class="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100">
+              Tumunu ZIP indir
+            </a>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="px-6 py-5">
@@ -138,6 +145,7 @@ unset($_SESSION['flash_error']);
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <?php foreach ($attachments as $att):
                 $isImage = attachment_is_image($att['mime_type']);
+                $canPreview = attachment_can_preview($att['mime_type']);
                 $previewUrl = panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1');
               ?>
                 <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -155,8 +163,13 @@ unset($_SESSION['flash_error']);
                     </div>
                     <p class="mt-2 truncate text-sm font-semibold text-slate-900" title="<?= e($att['original_name']) ?>"><?= e($att['original_name']) ?></p>
                     <p class="text-xs text-slate-500"><?= e($att['uploaded_at']) ?><?= !empty($att['uploaded_by_name']) ? ' &mdash; ' . e($att['uploaded_by_name']) : '' ?></p>
-                    <div class="mt-3 flex items-center justify-between">
-                      <a class="text-sm font-semibold text-blue-700 hover:underline" href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>">Indir</a>
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-3">
+                        <?php if ($canPreview): ?>
+                          <a class="text-sm font-semibold text-slate-700 hover:underline" href="<?= e($previewUrl) ?>" target="_blank" rel="noopener">Goruntule</a>
+                        <?php endif; ?>
+                        <a class="text-sm font-semibold text-blue-700 hover:underline" href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>">Indir</a>
+                      </div>
                       <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" onsubmit="return confirm('Dosyayi sil?');">
                         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
                         <input type="hidden" name="id" value="<?= (int)$att['id'] ?>">

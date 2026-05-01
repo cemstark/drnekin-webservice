@@ -59,6 +59,11 @@ function attachment_is_image(string $mime): bool
     return strncmp($mime, 'image/', 6) === 0;
 }
 
+function attachment_can_preview(string $mime): bool
+{
+    return attachment_is_image($mime) || $mime === 'application/pdf' || $mime === 'text/plain';
+}
+
 function attachment_validate_upload(array $file): array
 {
     $errors = [];

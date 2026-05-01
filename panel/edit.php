@@ -209,7 +209,10 @@ try {
 
       <?php if ($attachmentsAvailable && $attachments !== []): ?>
         <section style="margin-top:24px">
-          <h3 style="margin:0 0 10px;font-size:16px;font-weight:700">Mevcut belgeler &amp; fotograflar</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 10px">
+            <h3 style="margin:0;font-size:16px;font-weight:700">Mevcut belgeler &amp; fotograflar</h3>
+            <a href="<?= e(panel_url('download_all.php?id=' . $id)) ?>" style="display:inline-block;padding:6px 12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:12px;font-weight:600;border-radius:6px;text-decoration:none">Tumunu ZIP indir</a>
+          </div>
           <table style="width:100%;border-collapse:collapse;font-size:14px">
             <thead><tr style="text-align:left;color:#64748b;font-size:12px;text-transform:uppercase">
               <th style="padding:6px 4px">Kategori</th><th>Dosya</th><th>Boyut</th><th>Yuklendi</th><th></th>
@@ -222,6 +225,9 @@ try {
                   <td style="padding:6px 4px"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
                   <td style="padding:6px 4px;font-size:12px;color:#64748b"><?= e($att['uploaded_at']) ?></td>
                   <td style="padding:6px 4px;text-align:right;white-space:nowrap">
+                    <?php if (attachment_can_preview($att['mime_type'])): ?>
+                      <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener" style="color:#475569;margin-right:8px">Goruntule</a>
+                    <?php endif; ?>
                     <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'])) ?>" style="color:#2563eb">Indir</a>
                     <form method="post" action="<?= e(panel_url('delete_attachment.php')) ?>" style="display:inline;margin-left:8px" onsubmit="return confirm('Dosyayi sil?');">
                       <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">

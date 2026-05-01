@@ -70,6 +70,23 @@ $statuses = $pdo->query('SELECT repair_status FROM service_records WHERE repair_
 $insurances = $pdo->query('SELECT insurance_company, COUNT(*) total FROM service_records WHERE insurance_company <> "" GROUP BY insurance_company ORDER BY insurance_company')->fetchAll();
 $summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(mini_repair_has = 1) mini_count FROM service_records')->fetch();
 $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
+
+// Police bitisi yaklasanlar (migration calistirilmadiysa sessizce atla)
+$policyExpiringSoon = [];
+try {
+    $pq = $pdo->query(
+        "SELECT id, plate, customer_name, insurance_company, policy_end_date,
+                DATEDIFF(policy_end_date, CURDATE()) AS days_left
+         FROM service_records
+         WHERE policy_end_date IS NOT NULL
+           AND DATEDIFF(policy_end_date, CURDATE()) BETWEEN 0 AND 30
+         ORDER BY policy_end_date ASC
+         LIMIT 50"
+    );
+    $policyExpiringSoon = $pq ? $pq->fetchAll() : [];
+} catch (Throwable $e) {
+    $policyExpiringSoon = [];
+}
 ?>
 <!doctype html>
 <html lang="tr">
@@ -114,6 +131,49 @@ $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LI
         <strong class="mt-2 block text-xl font-bold text-slate-950"><?= e($lastImport['created_at'] ?? '-') ?></strong>
       </div>
     </section>
+
+    <?php if ($policyExpiringSoon !== []): ?>
+      <section class="mt-5 overflow-hidden rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 px-4 py-3">
+          <div>
+            <h2 class="text-sm font-bold text-amber-900">Police bitisi yaklasan araclar</h2>
+            <p class="text-xs text-amber-800">Bugun ile 30 gun arasinda biten policeler.</p>
+          </div>
+          <span class="rounded-full bg-amber-200 px-3 py-1 text-xs font-bold text-amber-900"><?= count($policyExpiringSoon) ?> arac</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase text-amber-900">
+                <th class="px-4 py-2">Plaka</th>
+                <th class="px-4 py-2">Musteri</th>
+                <th class="px-4 py-2">Sigorta</th>
+                <th class="px-4 py-2">Bitis</th>
+                <th class="px-4 py-2">Kalan</th>
+                <th class="px-4 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($policyExpiringSoon as $p):
+                $d = (int)$p['days_left'];
+                $rowClass = $d <= 7 ? 'text-red-700 font-semibold' : 'text-amber-900';
+              ?>
+                <tr class="border-t border-amber-100 <?= $rowClass ?>">
+                  <td class="px-4 py-2 font-bold"><?= e($p['plate']) ?></td>
+                  <td class="px-4 py-2"><?= e($p['customer_name']) ?></td>
+                  <td class="px-4 py-2"><?= e($p['insurance_company'] ?: '-') ?></td>
+                  <td class="px-4 py-2"><?= e($p['policy_end_date']) ?></td>
+                  <td class="px-4 py-2"><?= e($d) ?> gun</td>
+                  <td class="px-4 py-2 text-right">
+                    <a class="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <?php endif; ?>
 
     <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Sigorta filtreleri">
       <div class="mb-3 flex items-center justify-between gap-3">
