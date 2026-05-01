@@ -20,6 +20,81 @@ function current_user(): ?array
     return $user;
 }
 
+function user_profile_key(string $username): string
+{
+    $key = trim($username);
+    $key = function_exists('mb_strtolower') ? mb_strtolower($key, 'UTF-8') : strtolower($key);
+    return strtr($key, [
+        'ı' => 'i',
+        'İ' => 'i',
+        'ş' => 's',
+        'Ş' => 's',
+        'ğ' => 'g',
+        'Ğ' => 'g',
+        'ü' => 'u',
+        'Ü' => 'u',
+        'ö' => 'o',
+        'Ö' => 'o',
+        'ç' => 'c',
+        'Ç' => 'c',
+    ]);
+}
+
+function current_user_display_name(): string
+{
+    $user = current_user();
+    if ($user === null) {
+        return '';
+    }
+
+    return (string)($user['full_name'] ?: $user['username']);
+}
+
+function current_user_profile_photo_file(): ?string
+{
+    $user = current_user();
+    if ($user === null) {
+        return null;
+    }
+
+    $photos = [
+        'ozlem' => 'ozlem.jpeg',
+        'nursen' => 'nursen.jpeg',
+        'emirhan' => 'emirhan.jpeg',
+    ];
+
+    return $photos[user_profile_key((string)$user['username'])] ?? null;
+}
+
+function current_user_profile_photo_url(): ?string
+{
+    $file = current_user_profile_photo_file();
+    if ($file === null) {
+        return null;
+    }
+
+    $user = current_user();
+    $key = $user !== null ? user_profile_key((string)$user['username']) : '';
+    return panel_url('profile_photo.php?u=' . rawurlencode($key));
+}
+
+function render_current_user_badge(): void
+{
+    $name = current_user_display_name();
+    $photoUrl = current_user_profile_photo_url();
+    if ($name === '') {
+        return;
+    }
+    ?>
+    <span class="user-badge">
+      <?php if ($photoUrl !== null): ?>
+        <img src="<?= e($photoUrl) ?>" alt="<?= e($name) ?>" class="user-avatar">
+      <?php endif; ?>
+      <span><?= e($name) ?></span>
+    </span>
+    <?php
+}
+
 function require_login(): void
 {
     if (current_user() === null) {

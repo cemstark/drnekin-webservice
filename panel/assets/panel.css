@@ -67,6 +67,34 @@ a { color: var(--accent-dark); text-decoration: none; font-weight: 700; }
   color: var(--muted);
 }
 
+.user-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 6px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff, #f0f9ff);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(14, 116, 144, .08);
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #bbf7d0;
+  border-radius: 999px;
+  object-fit: cover;
+  object-position: center;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 3px rgba(240, 253, 250, .9);
+}
+
 .topbar nav a {
   display: inline-flex;
   align-items: center;

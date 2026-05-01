@@ -127,7 +127,7 @@ try {
       <h1>Servis Paneli</h1>
     </div>
     <nav>
-      <span><?= e(current_user()['full_name'] ?: current_user()['username']) ?></span>
+      <?php render_current_user_badge(); ?>
       <a href="<?= e(panel_url('add.php')) ?>">Arac ekle</a>
       <a href="<?= e(panel_url('import.php')) ?>">Excel yukle</a>
       <a href="<?= e(panel_url('install/migrate.php')) ?>">Migration</a>

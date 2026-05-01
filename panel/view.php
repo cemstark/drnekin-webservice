@@ -52,6 +52,7 @@ unset($_SESSION['flash_error']);
       <h1>Arac Detayi</h1>
     </div>
     <nav>
+      <?php render_current_user_badge(); ?>
       <a href="<?= e(panel_url('index.php')) ?>">Panele don</a>
       <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
     </nav>

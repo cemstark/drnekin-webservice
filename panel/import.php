@@ -47,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <h1>Excel Yukle</h1>
     </div>
     <nav>
+      <?php render_current_user_badge(); ?>
       <a href="<?= e(panel_url('index.php')) ?>">Panele don</a>
       <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
     </nav>
