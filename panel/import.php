@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/importer.php';
+require_once __DIR__ . '/includes/options.php';
 require_login();
 
 $result = null;
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <?php if ($lastLog): ?>
         <div class="log-note">
-          Son log: <?= e($lastLog['created_at']) ?>,
+          Son log: <?= e(format_tr_datetime($lastLog['created_at'] ?? null)) ?>,
           durum <?= e($lastLog['status']) ?>,
           aktarilan <?= e($lastLog['imported_count']) ?>,
           atlanan <?= e($lastLog['skipped_count']) ?>.

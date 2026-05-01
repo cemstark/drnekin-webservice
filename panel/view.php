@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/attachments.php';
+require_once __DIR__ . '/includes/options.php';
 require_login();
 
 $id = (int)($_GET['id'] ?? 0);
@@ -70,17 +71,18 @@ unset($_SESSION['flash_error']);
         </div>
       </div>
       <dl class="grid gap-4 px-6 py-6 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Arac Filtresi</dt><dd class="mt-1 text-slate-950"><span class="type-badge"><?= e(insurance_type_label($record['insurance_type'] ?? 'kasko')) ?></span></dd></div>
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Sigorta</dt><dd class="mt-1 text-slate-950"><?= e($record['insurance_company'] ?: '-') ?></dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tamir Durumu</dt><dd class="mt-1 text-slate-950"><?= e($record['repair_status']) ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tamir Durumu</dt><dd class="mt-1 text-slate-950"><span class="pill <?= e(repair_status_tone((string)$record['repair_status'])) ?>"><?= e($record['repair_status']) ?></span></dd></div>
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mini Onarim</dt><dd class="mt-1 text-slate-950"><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : 'Yok' ?></dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Servis Giris</dt><dd class="mt-1 text-slate-950"><?= e($record['service_entry_date'] ?: '-') ?></dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Servis Cikis</dt><dd class="mt-1 text-slate-950"><?= e($record['service_exit_date'] ?: '-') ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Servis Giris</dt><dd class="mt-1 text-slate-950"><?= e(format_tr_date($record['service_entry_date'])) ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Servis Cikis</dt><dd class="mt-1 text-slate-950"><?= e(format_tr_date($record['service_exit_date'] ?? null)) ?></dd></div>
         <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Servis Ay</dt><dd class="mt-1 text-slate-950"><?= e($record['service_month']) ?></dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Police Baslangic</dt><dd class="mt-1 text-slate-950"><?= e($record['policy_start_date'] ?: '-') ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Police Baslangic</dt><dd class="mt-1 text-slate-950"><?= e(format_tr_date($record['policy_start_date'] ?? null)) ?></dd></div>
         <div>
           <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Police Bitis</dt>
           <dd class="mt-1 text-slate-950">
-            <?= e($record['policy_end_date'] ?: '-') ?>
+            <?= e(format_tr_date($record['policy_end_date'] ?? null)) ?>
             <?php if ($daysToPolicyEnd !== null): ?>
               <?php if ($daysToPolicyEnd < 0): ?>
                 <span class="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"><?= e(abs($daysToPolicyEnd)) ?> gun gecti</span>
@@ -92,8 +94,8 @@ unset($_SESSION['flash_error']);
             <?php endif; ?>
           </dd>
         </div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Olusturuldu</dt><dd class="mt-1 text-slate-950"><?= e($record['created_at']) ?></dd></div>
-        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Guncellendi</dt><dd class="mt-1 text-slate-950"><?= e($record['updated_at']) ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Olusturuldu</dt><dd class="mt-1 text-slate-950"><?= e(format_tr_datetime($record['created_at'] ?? null)) ?></dd></div>
+        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Guncellendi</dt><dd class="mt-1 text-slate-950"><?= e(format_tr_datetime($record['updated_at'] ?? null)) ?></dd></div>
       </dl>
     </section>
 
@@ -162,7 +164,7 @@ unset($_SESSION['flash_error']);
                       <span class="text-xs text-slate-500"><?= e(attachment_format_size((int)$att['file_size'])) ?></span>
                     </div>
                     <p class="mt-2 truncate text-sm font-semibold text-slate-900" title="<?= e($att['original_name']) ?>"><?= e($att['original_name']) ?></p>
-                    <p class="text-xs text-slate-500"><?= e($att['uploaded_at']) ?><?= !empty($att['uploaded_by_name']) ? ' &mdash; ' . e($att['uploaded_by_name']) : '' ?></p>
+                    <p class="text-xs text-slate-500"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?><?= !empty($att['uploaded_by_name']) ? ' &mdash; ' . e($att['uploaded_by_name']) : '' ?></p>
                     <div class="mt-3 flex items-center justify-between gap-2">
                       <div class="flex items-center gap-3">
                         <?php if ($canPreview): ?>

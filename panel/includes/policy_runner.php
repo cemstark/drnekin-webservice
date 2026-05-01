@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/options.php';
 
 const POLICY_REMINDER_JOB_KEY = 'policy_reminder';
 
@@ -176,7 +177,7 @@ function run_policy_reminder_job(): array
     foreach ($records as $record) {
         $policyEnd = (string)$record['policy_end_date'];
         $daysLeft = (int)(new DateTimeImmutable('today'))->diff(new DateTimeImmutable($policyEnd))->format('%r%a');
-        $subject = sprintf('[DRN] Police bitisi yaklasti: %s - %s', $record['plate'], $policyEnd);
+        $subject = sprintf('[DRN] Police bitisi yaklasti: %s - %s', $record['plate'], format_tr_date($policyEnd));
         $body = policy_reminder_email_html($record, $daysLeft);
 
         $result = send_mail($recipient, $subject, $body);
@@ -204,18 +205,19 @@ function run_policy_reminder_job(): array
  */
 function policy_reminder_email_html(array $record, int $daysLeft): string
 {
-    $policyStart = trim((string)($record['policy_start_date'] ?? '')) ?: '-';
+    $policyStart = format_tr_date((string)($record['policy_start_date'] ?? ''));
+    $policyEnd = format_tr_date((string)($record['policy_end_date'] ?? ''));
     $insurance = trim((string)($record['insurance_company'] ?? '')) ?: '-';
 
     return '<div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.5">'
         . '<h2 style="margin:0 0 12px;font-size:20px">Police bitisi yaklasiyor</h2>'
-        . '<p style="margin:0 0 16px">Asagidaki aracin policesi <strong>' . e($record['policy_end_date']) . '</strong> tarihinde sona eriyor. Kalan gun: <strong>' . e($daysLeft) . '</strong>.</p>'
+        . '<p style="margin:0 0 16px">Asagidaki aracin policesi <strong>' . e($policyEnd) . '</strong> tarihinde sona eriyor. Kalan gun: <strong>' . e($daysLeft) . '</strong>.</p>'
         . '<table cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-size:14px">'
         . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Plaka</td><td style="border:1px solid #e2e8f0">' . e($record['plate']) . '</td></tr>'
         . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Musteri</td><td style="border:1px solid #e2e8f0">' . e($record['customer_name']) . '</td></tr>'
         . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Sigorta</td><td style="border:1px solid #e2e8f0">' . e($insurance) . '</td></tr>'
         . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Police baslangic</td><td style="border:1px solid #e2e8f0">' . e($policyStart) . '</td></tr>'
-        . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Police bitis</td><td style="border:1px solid #e2e8f0">' . e($record['policy_end_date']) . '</td></tr>'
+        . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Police bitis</td><td style="border:1px solid #e2e8f0">' . e($policyEnd) . '</td></tr>'
         . '<tr><td style="border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Kayit no</td><td style="border:1px solid #e2e8f0">' . e($record['record_no']) . '</td></tr>'
         . '</table>'
         . '<p style="margin:16px 0 0;color:#64748b;font-size:12px">Bu e-posta DRN Servis Paneli tarafindan otomatik olusturulmustur.</p>'

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/attachments.php';
+require_once __DIR__ . '/includes/options.php';
 require_login();
 
 ensure_excel_updates_table();
@@ -44,13 +45,31 @@ function edit_policy_reminder_column_exists(): bool
     return $exists;
 }
 
+function edit_insurance_type_column_exists(): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        db()->query('SELECT insurance_type FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $fields = [
         'plate' => trim((string)($_POST['plate'] ?? '')),
         'customer_name' => trim((string)($_POST['customer_name'] ?? '')),
+        'insurance_type' => valid_insurance_type($_POST['insurance_type'] ?? null) ? (string)$_POST['insurance_type'] : 'kasko',
         'insurance_company' => trim((string)($_POST['insurance_company'] ?? '')),
-        'repair_status' => trim((string)($_POST['repair_status'] ?? '')),
+        'repair_status' => normalize_repair_status((string)($_POST['repair_status'] ?? '')),
         'mini_repair_has' => isset($_POST['mini_repair_has']) ? 1 : 0,
         'mini_repair_part' => trim((string)($_POST['mini_repair_part'] ?? '')),
         'service_entry_date' => edit_date_value($_POST['service_entry_date'] ?? ''),
@@ -62,12 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($fields['plate'] === '' || $fields['customer_name'] === '' || $fields['service_entry_date'] === null) {
         $error = 'Plaka, ad soyad ve giris tarihi zorunludur.';
     } else {
-        $fields['repair_status'] = $fields['repair_status'] ?: 'Belirtilmedi';
+        $fields['repair_status'] = normalize_repair_status($fields['repair_status']);
         $resetPolicyReminder = edit_policy_reminder_column_exists()
             && ((string)($record['policy_end_date'] ?? '') !== (string)($fields['policy_end_date'] ?? ''));
+        $hasInsuranceType = edit_insurance_type_column_exists();
         $sql = 'UPDATE service_records SET
              plate = :plate,
              customer_name = :customer_name,
+             ' . ($hasInsuranceType ? 'insurance_type = :insurance_type,' : '') . '
              insurance_company = :insurance_company,
              repair_status = :repair_status,
              mini_repair_has = :mini_repair_has,
@@ -81,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              . ($resetPolicyReminder ? ', policy_reminder_sent_at = NULL' : '')
              . ' WHERE id = :id';
         $update = db()->prepare($sql);
-        $update->execute([
+        $updateParams = [
             ':plate' => $fields['plate'],
             ':customer_name' => $fields['customer_name'],
             ':insurance_company' => $fields['insurance_company'],
@@ -94,7 +115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':policy_end_date' => $fields['policy_end_date'],
             ':service_month' => substr((string)$fields['service_entry_date'], 0, 7),
             ':id' => $id,
-        ]);
+        ];
+        if ($hasInsuranceType) {
+            $updateParams[':insurance_type'] = $fields['insurance_type'];
+        }
+        $update->execute($updateParams);
 
         $queue = db()->prepare('INSERT INTO pending_excel_updates (record_no, fields_json, created_by) VALUES (?, ?, ?)');
         $queue->execute([
@@ -188,8 +213,25 @@ try {
         <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
         <label>Plaka <input name="plate" value="<?= e($record['plate']) ?>" required></label>
         <label>Ad Soyad <input name="customer_name" value="<?= e($record['customer_name']) ?>" required></label>
+        <label>Arac Filtresi
+          <select name="insurance_type">
+            <?php $selectedType = (string)($record['insurance_type'] ?? 'kasko'); ?>
+            <?php foreach (insurance_type_options() as $key => $label): ?>
+              <option value="<?= e($key) ?>" <?= $selectedType === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </label>
         <label>Sigorta <input name="insurance_company" value="<?= e($record['insurance_company']) ?>"></label>
-        <label>Tamir Durumu <input name="repair_status" value="<?= e($record['repair_status']) ?>"></label>
+        <label>Tamir Durumu
+          <select name="repair_status">
+            <?php if (!array_key_exists((string)$record['repair_status'], repair_status_options())): ?>
+              <option value="<?= e($record['repair_status']) ?>" selected><?= e($record['repair_status']) ?></option>
+            <?php endif; ?>
+            <?php foreach (repair_status_options() as $key => $label): ?>
+              <option value="<?= e($key) ?>" <?= (string)$record['repair_status'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </label>
         <label class="check-row"><input type="checkbox" name="mini_repair_has" <?= (int)$record['mini_repair_has'] === 1 ? 'checked' : '' ?>> Mini onarim var</label>
         <label>Mini Onarim Parca <input name="mini_repair_part" value="<?= e($record['mini_repair_part']) ?>"></label>
         <label>Giris Tarihi <input type="date" name="service_entry_date" value="<?= e($record['service_entry_date']) ?>" required></label>
@@ -223,7 +265,7 @@ try {
                   <td style="padding:6px 4px"><span style="background:#e2e8f0;border-radius:9999px;padding:2px 8px;font-size:11px;font-weight:600"><?= e(attachment_category_label($att['category'])) ?></span></td>
                   <td style="padding:6px 4px"><?= e($att['original_name']) ?></td>
                   <td style="padding:6px 4px"><?= e(attachment_format_size((int)$att['file_size'])) ?></td>
-                  <td style="padding:6px 4px;font-size:12px;color:#64748b"><?= e($att['uploaded_at']) ?></td>
+                  <td style="padding:6px 4px;font-size:12px;color:#64748b"><?= e(format_tr_datetime($att['uploaded_at'] ?? null)) ?></td>
                   <td style="padding:6px 4px;text-align:right;white-space:nowrap">
                     <?php if (attachment_can_preview($att['mime_type'])): ?>
                       <a href="<?= e(panel_url('download_attachment.php?id=' . (int)$att['id'] . '&inline=1')) ?>" target="_blank" rel="noopener" style="color:#475569;margin-right:8px">Goruntule</a>

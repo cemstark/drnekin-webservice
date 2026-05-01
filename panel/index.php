@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/policy_runner.php';
+require_once __DIR__ . '/includes/options.php';
 require_login();
 fire_policy_reminder_async();
 
@@ -34,11 +35,33 @@ function index_url(array $overrides = []): string
     return panel_url('index.php' . ($query !== '' ? '?' . $query : ''));
 }
 
+function index_insurance_type_column_exists(PDO $pdo): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        $pdo->query('SELECT insurance_type FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
 $pdo = db();
 $month = preg_match('/^\d{4}-\d{2}$/', (string)($_GET['month'] ?? '')) ? (string)$_GET['month'] : '';
 $status = trim((string)($_GET['status'] ?? ''));
+$type = valid_insurance_type($_GET['type'] ?? null) ? (string)$_GET['type'] : '';
 $insurance = trim((string)($_GET['insurance'] ?? ''));
 $q = trim((string)($_GET['q'] ?? ''));
+$hasInsuranceType = index_insurance_type_column_exists($pdo);
+if (!$hasInsuranceType) {
+    $type = '';
+}
 
 $where = [];
 $params = [];
@@ -49,6 +72,10 @@ if ($month !== '') {
 if ($status !== '') {
     $where[] = 'repair_status = ?';
     $params[] = $status;
+}
+if ($hasInsuranceType && $type !== '') {
+    $where[] = 'insurance_type = ?';
+    $params[] = $type;
 }
 if ($insurance !== '') {
     $where[] = 'insurance_company = ?';
@@ -66,8 +93,15 @@ $stmt->execute($params);
 $records = $stmt->fetchAll();
 
 $months = $pdo->query('SELECT service_month, COUNT(*) total FROM service_records GROUP BY service_month ORDER BY service_month DESC LIMIT 24')->fetchAll();
-$statuses = $pdo->query('SELECT repair_status FROM service_records WHERE repair_status <> "" GROUP BY repair_status ORDER BY repair_status')->fetchAll(PDO::FETCH_COLUMN);
-$insurances = $pdo->query('SELECT insurance_company, COUNT(*) total FROM service_records WHERE insurance_company <> "" GROUP BY insurance_company ORDER BY insurance_company')->fetchAll();
+$statusesFromDb = $pdo->query('SELECT repair_status FROM service_records WHERE repair_status <> "" GROUP BY repair_status ORDER BY repair_status')->fetchAll(PDO::FETCH_COLUMN);
+$statuses = array_values(array_unique(array_merge(array_keys(repair_status_options()), $statusesFromDb)));
+if ($hasInsuranceType && $type !== '') {
+    $insuranceStmt = $pdo->prepare('SELECT insurance_company, COUNT(*) total FROM service_records WHERE insurance_company <> "" AND insurance_type = ? GROUP BY insurance_company ORDER BY insurance_company');
+    $insuranceStmt->execute([$type]);
+    $insurances = $insuranceStmt->fetchAll();
+} else {
+    $insurances = $pdo->query('SELECT insurance_company, COUNT(*) total FROM service_records WHERE insurance_company <> "" GROUP BY insurance_company ORDER BY insurance_company')->fetchAll();
+}
 $summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(mini_repair_has = 1) mini_count FROM service_records')->fetch();
 $lastImport = $pdo->query('SELECT * FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
 
@@ -128,7 +162,7 @@ try {
       </div>
       <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Son senkron</span>
-        <strong class="mt-2 block text-xl font-bold text-slate-950"><?= e($lastImport['created_at'] ?? '-') ?></strong>
+        <strong class="mt-2 block text-xl font-bold text-slate-950"><?= e(format_tr_datetime($lastImport['created_at'] ?? null)) ?></strong>
       </div>
     </section>
 
@@ -162,7 +196,7 @@ try {
                   <td class="px-4 py-2 font-bold"><?= e($p['plate']) ?></td>
                   <td class="px-4 py-2"><?= e($p['customer_name']) ?></td>
                   <td class="px-4 py-2"><?= e($p['insurance_company'] ?: '-') ?></td>
-                  <td class="px-4 py-2"><?= e($p['policy_end_date']) ?></td>
+                  <td class="px-4 py-2"><?= e(format_tr_date($p['policy_end_date'])) ?></td>
                   <td class="px-4 py-2"><?= e($d) ?> gun</td>
                   <td class="px-4 py-2 text-right">
                     <a class="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
@@ -175,32 +209,42 @@ try {
       </section>
     <?php endif; ?>
 
-    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Sigorta filtreleri">
+    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Arac filtreleri">
       <div class="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-sm font-semibold text-slate-950">Sigorta filtreleri</h2>
-          <p class="text-xs text-slate-500">Sigorta sirketine gore hizli filtrele</p>
+          <h2 class="text-sm font-semibold text-slate-950">Arac filtreleri</h2>
+          <p class="text-xs text-slate-500">Kasko, trafik, filo ve sigorta sirketine gore hizli filtrele</p>
         </div>
-        <?php if ($insurance !== ''): ?>
-          <a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['insurance' => null])) ?>">Filtreyi kaldir</a>
+        <?php if ($insurance !== '' || $type !== ''): ?>
+          <a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['insurance' => null, 'type' => null])) ?>">Filtreyi kaldir</a>
         <?php endif; ?>
       </div>
-      <div class="flex flex-wrap gap-2">
-      <a class="<?= $insurance === '' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => null])) ?>">
-        Tum sigortalar
-      </a>
-      <?php foreach ($insurances as $item): ?>
-        <a class="<?= $insurance === $item['insurance_company'] ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
-          <?= e($item['insurance_company']) ?>
-          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"><?= e($item['total']) ?></span>
+      <div class="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+        <a class="<?= $type === '' && $insurance === '' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['type' => null, 'insurance' => null])) ?>">
+          Tum araclar
         </a>
-      <?php endforeach; ?>
+        <?php foreach (insurance_type_options() as $key => $label): ?>
+          <a class="<?= $type === $key ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['type' => $key, 'insurance' => null])) ?>">
+            <?= e($label) ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <?php foreach ($insurances as $item): ?>
+          <a class="<?= $insurance === $item['insurance_company'] ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
+            <?= e($item['insurance_company']) ?>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"><?= e($item['total']) ?></span>
+          </a>
+        <?php endforeach; ?>
       </div>
     </section>
 
     <form class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto_auto]" method="get">
       <?php if ($insurance !== ''): ?>
         <input type="hidden" name="insurance" value="<?= e($insurance) ?>">
+      <?php endif; ?>
+      <?php if ($type !== ''): ?>
+        <input type="hidden" name="type" value="<?= e($type) ?>">
       <?php endif; ?>
       <input class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="q" value="<?= e($q) ?>" placeholder="Plaka veya isim ara">
       <select class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="month">
@@ -232,6 +276,7 @@ try {
             <tr>
               <th>Plaka</th>
               <th>Ad Soyad</th>
+              <th>Arac Filtresi</th>
               <th>Sigorta</th>
               <th>Tamir Durumu</th>
               <th>Mini Onarim</th>
@@ -245,11 +290,12 @@ try {
               <tr>
                 <td><strong><?= e($record['plate']) ?></strong></td>
                 <td><?= e($record['customer_name']) ?></td>
+                <td><span class="type-badge"><?= e(insurance_type_label($record['insurance_type'] ?? 'kasko')) ?></span></td>
                 <td><?= e($record['insurance_company'] ?: '-') ?></td>
-                <td><span class="pill"><?= e($record['repair_status']) ?></span></td>
+                <td><span class="pill <?= e(repair_status_tone((string)$record['repair_status'])) ?>"><?= e($record['repair_status']) ?></span></td>
                 <td><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : 'Yok' ?></td>
-                <td><?= e($record['service_entry_date']) ?></td>
-                <td><?= e($record['service_exit_date'] ?: '-') ?></td>
+                <td><?= e(format_tr_date($record['service_entry_date'])) ?></td>
+                <td><?= e(format_tr_date($record['service_exit_date'] ?? null)) ?></td>
                 <td class="whitespace-nowrap">
                   <a class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50" href="<?= e(panel_url('view.php?id=' . (int)$record['id'])) ?>">Detay</a>
                   <a class="ml-1 inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100" href="<?= e(panel_url('edit.php?id=' . (int)$record['id'])) ?>">Duzenle</a>
@@ -257,7 +303,7 @@ try {
               </tr>
             <?php endforeach; ?>
             <?php if ($records === []): ?>
-              <tr><td colspan="8" class="empty">Filtreye uygun kayit bulunamadi.</td></tr>
+              <tr><td colspan="9" class="empty">Filtreye uygun kayit bulunamadi.</td></tr>
             <?php endif; ?>
           </tbody>
         </table>

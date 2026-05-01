@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/options.php';
 require_once __DIR__ . '/xlsx_reader.php';
 
 function import_excel_file(string $path, string $sourceName): array
@@ -57,7 +58,7 @@ function import_excel_file(string $path, string $sourceName): array
                     'plate' => normalize_plate(cell($row, $map, 'plate')),
                     'customer_name' => cell($row, $map, 'customer_name'),
                     'insurance_company' => cell($row, $map, 'insurance_company'),
-                    'repair_status' => cell($row, $map, 'repair_status') ?: 'Belirtilmedi',
+                    'repair_status' => normalize_repair_status(cell($row, $map, 'repair_status')),
                     'mini_repair_part' => cell($row, $map, 'mini_repair_part'),
                     'service_entry_date' => $entryDate,
                     'service_exit_date' => normalize_date(cell($row, $map, 'service_exit_date')),

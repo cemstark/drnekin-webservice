@@ -63,11 +63,32 @@ function create_table_if_missing(PDO $pdo, string $db, string $table, string $cr
     }
 }
 
+function upsert_user(PDO $pdo, string $username, string $fullName, string $password, array &$log): void
+{
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+    $stmt->execute([$username]);
+    $id = $stmt->fetchColumn();
+
+    if ($id) {
+        $update = $pdo->prepare('UPDATE users SET password_hash = ?, full_name = ?, role = ?, active = 1 WHERE id = ?');
+        $update->execute([$hash, $fullName, 'staff', (int)$id]);
+        $log[] = "  kullanici guncellendi: $username";
+        return;
+    }
+
+    $insert = $pdo->prepare('INSERT INTO users (username, password_hash, full_name, role, active) VALUES (?, ?, ?, ?, 1)');
+    $insert->execute([$username, $hash, $fullName, 'staff']);
+    $log[] = "+ kullanici olusturuldu: $username";
+}
+
 try {
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_start_date', 'policy_start_date DATE NULL AFTER service_exit_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_end_date',   'policy_end_date DATE NULL AFTER policy_start_date', $log);
     add_column_if_missing($pdo, $dbName, 'service_records', 'policy_reminder_sent_at', 'policy_reminder_sent_at DATETIME NULL AFTER policy_end_date', $log);
+    add_column_if_missing($pdo, $dbName, 'service_records', 'insurance_type', "insurance_type ENUM('kasko','trafik','filo') NOT NULL DEFAULT 'kasko' AFTER insurance_company", $log);
     add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_policy_end_index', 'INDEX service_records_policy_end_index (policy_end_date)', $log);
+    add_index_if_missing($pdo, $dbName, 'service_records', 'service_records_insurance_type_index', 'INDEX service_records_insurance_type_index (insurance_type)', $log);
 
     create_table_if_missing($pdo, $dbName, 'service_attachments',
         "CREATE TABLE service_attachments (
@@ -100,6 +121,17 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         $log
     );
+
+    foreach ([
+        ['özgür', 'Özgür'],
+        ['çetin', 'Çetin'],
+        ['doğrul', 'Doğrul'],
+        ['emirhan', 'Emirhan'],
+        ['nurşen', 'Nurşen'],
+        ['özlem', 'Özlem'],
+    ] as [$username, $fullName]) {
+        upsert_user($pdo, $username, $fullName, 'tamirci1', $log);
+    }
 
     $log[] = '';
     $log[] = 'Migration tamamlandi.';

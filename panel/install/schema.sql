@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   plate VARCHAR(40) NOT NULL,
   customer_name VARCHAR(180) NOT NULL,
   insurance_company VARCHAR(180) NOT NULL DEFAULT '',
+  insurance_type ENUM('kasko','trafik','filo') NOT NULL DEFAULT 'kasko',
   repair_status VARCHAR(120) NOT NULL DEFAULT 'Belirtilmedi',
   mini_repair_has TINYINT(1) NOT NULL DEFAULT 0,
   mini_repair_part VARCHAR(180) NOT NULL DEFAULT '',
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS service_records (
   KEY service_records_month_index (service_month),
   KEY service_records_plate_index (plate),
   KEY service_records_status_index (repair_status),
+  KEY service_records_insurance_type_index (insurance_type),
   KEY service_records_policy_end_index (policy_end_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

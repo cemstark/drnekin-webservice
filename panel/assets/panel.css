@@ -263,11 +263,39 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  padding: 0 9px;
+  padding: 0 10px;
   border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-yellow {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.status-green {
+  border: 1px solid #bbf7d0;
   background: #ecfdf5;
   color: #047857;
-  border: 1px solid #bbf7d0;
+}
+
+.status-red {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
   font-size: 12px;
   font-weight: 800;
 }
@@ -399,7 +427,7 @@ main > section.grid.gap-4 strong {
   letter-spacing: -0.035em;
 }
 
-main > section[aria-label="Sigorta filtreleri"],
+main > section[aria-label="Arac filtreleri"],
 main > form[method="get"] {
   border-color: rgba(226, 232, 240, .9) !important;
   border-radius: 16px !important;
@@ -407,12 +435,12 @@ main > form[method="get"] {
   box-shadow: var(--shadow) !important;
 }
 
-main > section[aria-label="Sigorta filtreleri"] a {
+main > section[aria-label="Arac filtreleri"] a {
   border-radius: 999px !important;
   transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease;
 }
 
-main > section[aria-label="Sigorta filtreleri"] a:hover {
+main > section[aria-label="Arac filtreleri"] a:hover {
   transform: translateY(-1px);
 }
 

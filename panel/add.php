@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/attachments.php';
+require_once __DIR__ . '/includes/options.php';
 require_login();
 
 ensure_excel_updates_table();
@@ -24,11 +25,29 @@ function add_record_no(string $plate, ?string $entryDate): string
     return 'manual-' . date('YmdHis') . '-' . strtolower(trim($plateKey, '-')) . '-' . substr((string)($entryDate ?: 'tarihsiz'), 0, 10);
 }
 
+function add_insurance_type_column_exists(): bool
+{
+    static $exists = null;
+    if ($exists !== null) {
+        return $exists;
+    }
+
+    try {
+        db()->query('SELECT insurance_type FROM service_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+
+    return $exists;
+}
+
 $fields = [
     'plate' => '',
     'customer_name' => '',
+    'insurance_type' => 'kasko',
     'insurance_company' => '',
-    'repair_status' => '',
+    'repair_status' => 'Giris Yapti',
     'mini_repair_has' => 0,
     'mini_repair_part' => '',
     'service_entry_date' => date('Y-m-d'),
@@ -42,8 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fields = [
         'plate' => trim((string)($_POST['plate'] ?? '')),
         'customer_name' => trim((string)($_POST['customer_name'] ?? '')),
+        'insurance_type' => valid_insurance_type($_POST['insurance_type'] ?? null) ? (string)$_POST['insurance_type'] : 'kasko',
         'insurance_company' => trim((string)($_POST['insurance_company'] ?? '')),
-        'repair_status' => trim((string)($_POST['repair_status'] ?? '')),
+        'repair_status' => normalize_repair_status((string)($_POST['repair_status'] ?? '')),
         'mini_repair_has' => isset($_POST['mini_repair_has']) ? 1 : 0,
         'mini_repair_part' => trim((string)($_POST['mini_repair_part'] ?? '')),
         'service_entry_date' => add_date_value($_POST['service_entry_date'] ?? ''),
@@ -55,15 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($fields['plate'] === '' || $fields['customer_name'] === '' || $fields['service_entry_date'] === null) {
         $error = 'Plaka, ad soyad ve giris tarihi zorunludur.';
     } else {
-        $fields['repair_status'] = $fields['repair_status'] ?: 'Belirtilmedi';
+        $fields['repair_status'] = normalize_repair_status($fields['repair_status']);
         $recordNo = add_record_no($fields['plate'], $fields['service_entry_date']);
+        $hasInsuranceType = add_insurance_type_column_exists();
         $insert = db()->prepare(
             'INSERT INTO service_records
-             (record_no, plate, customer_name, insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, policy_start_date, policy_end_date, service_month, updated_at)
+             (record_no, plate, customer_name, ' . ($hasInsuranceType ? 'insurance_type, ' : '') . 'insurance_company, repair_status, mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, policy_start_date, policy_end_date, service_month, updated_at)
              VALUES
-             (:record_no, :plate, :customer_name, :insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :policy_start_date, :policy_end_date, :service_month, NOW())'
+             (:record_no, :plate, :customer_name, ' . ($hasInsuranceType ? ':insurance_type, ' : '') . ':insurance_company, :repair_status, :mini_repair_has, :mini_repair_part, :service_entry_date, :service_exit_date, :policy_start_date, :policy_end_date, :service_month, NOW())'
         );
-        $insert->execute([
+        $insertParams = [
             ':record_no' => $recordNo,
             ':plate' => $fields['plate'],
             ':customer_name' => $fields['customer_name'],
@@ -76,7 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':policy_start_date' => $fields['policy_start_date'],
             ':policy_end_date' => $fields['policy_end_date'],
             ':service_month' => substr((string)$fields['service_entry_date'], 0, 7),
-        ]);
+        ];
+        if ($hasInsuranceType) {
+            $insertParams[':insurance_type'] = $fields['insurance_type'];
+        }
+        $insert->execute($insertParams);
         $newRecordId = (int)db()->lastInsertId();
 
         $queuedFields = $fields;
@@ -121,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fields = [
             'plate' => '',
             'customer_name' => '',
+            'insurance_type' => 'kasko',
             'insurance_company' => '',
-            'repair_status' => '',
+            'repair_status' => 'Giris Yapti',
             'mini_repair_has' => 0,
             'mini_repair_part' => '',
             'service_entry_date' => date('Y-m-d'),
@@ -191,12 +217,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="customer_name" value="<?= e($fields['customer_name']) ?>" required>
         </label>
         <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Arac Filtresi
+          <select class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="insurance_type">
+            <?php foreach (insurance_type_options() as $key => $label): ?>
+              <option value="<?= e($key) ?>" <?= $fields['insurance_type'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
           Sigorta
           <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="insurance_company" value="<?= e($fields['insurance_company']) ?>">
         </label>
         <label class="grid gap-2 text-sm font-semibold text-slate-700">
           Tamir Durumu
-          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="repair_status" value="<?= e($fields['repair_status']) ?>">
+          <select class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="repair_status">
+            <?php foreach (repair_status_options() as $key => $label): ?>
+              <option value="<?= e($key) ?>" <?= $fields['repair_status'] === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
         </label>
         <label class="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
           <input class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" type="checkbox" name="mini_repair_has" <?= (int)$fields['mini_repair_has'] === 1 ? 'checked' : '' ?>>
