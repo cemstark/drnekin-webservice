@@ -61,6 +61,7 @@ function current_user_profile_photo_file(): ?string
         'ozlem' => 'ozlem.jpeg',
         'nursen' => 'nursen.jpeg',
         'emirhan' => 'emirhan.jpeg',
+        'cetin' => 'cetin.jpeg',
     ];
 
     return $photos[user_profile_key((string)$user['username'])] ?? null;
