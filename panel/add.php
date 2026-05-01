@@ -132,90 +132,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 }
-
-$activePage = 'arac-kabul';
-$pageTitle = 'Arac Kabul';
-include __DIR__ . '/includes/_layout_head.php';
 ?>
-  <main class="content">
-    <header class="page-head">
-      <div class="title-block">
-        <div class="eyebrow">Manuel Kayit</div>
-        <h1>Arac Kabul</h1>
-        <p class="sub">Yeni arac bilgisini sisteme ekleyin; Excel kuyruguna otomatik yazilir.</p>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arac Ekle - <?= e(panel_config('app_name')) ?></title>
+  <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">DRN</div>
+      <h1>Arac Ekle</h1>
+    </div>
+    <nav>
+      <a href="<?= e(panel_url('index.php')) ?>">Panele don</a>
+      <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 bg-slate-50 px-6 py-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Manuel kayit</p>
+        <h2 class="mt-1 text-xl font-bold text-slate-950">Yeni arac bilgisi</h2>
       </div>
-      <div class="actions">
-        <a class="btn-ghost" href="<?= e(panel_url('index.php')) ?>">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          Panele don
-        </a>
-      </div>
-    </header>
-
-    <section class="card" style="overflow:hidden">
-      <div class="card-pad-lg">
-        <?php if ($created): ?>
-          <div class="banner is-ok">
-            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <div>
-              <h3>Arac eklendi</h3>
-              <p>Excel'e yeni satir olarak yazilmak uzere kuyruga alindi. <?php if ($newRecordId > 0): ?><a href="<?= e(panel_url('view.php?id=' . $newRecordId)) ?>">Detay sayfasi</a><?php endif; ?></p>
-            </div>
+      <div class="px-6 py-6">
+      <?php if ($created): ?>
+        <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          Arac eklendi. Excel'e yeni satir olarak yazilmak uzere kuyruga alindi.
+          <?php if ($newRecordId > 0): ?>
+            <a class="ml-2 underline" href="<?= e(panel_url('view.php?id=' . $newRecordId)) ?>">Detay sayfasina git</a>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+      <?php if ($uploadWarnings): ?>
+        <div class="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          Bazi dosyalar yuklenemedi:
+          <ul class="mt-1 list-disc pl-5 font-normal">
+            <?php foreach ($uploadWarnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
+      <?php if ($error !== ''): ?>
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"><?= e($error) ?></div>
+      <?php endif; ?>
+      <form class="grid gap-5 md:grid-cols-2" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Plaka
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="plate" value="<?= e($fields['plate']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Ad Soyad
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="customer_name" value="<?= e($fields['customer_name']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Sigorta
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="insurance_company" value="<?= e($fields['insurance_company']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Tamir Durumu
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="repair_status" value="<?= e($fields['repair_status']) ?>">
+        </label>
+        <label class="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
+          <input class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" type="checkbox" name="mini_repair_has" <?= (int)$fields['mini_repair_has'] === 1 ? 'checked' : '' ?>>
+          Mini onarim var
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Mini Onarim Parca
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="mini_repair_part" value="<?= e($fields['mini_repair_part']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Giris Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="service_entry_date" value="<?= e($fields['service_entry_date']) ?>" required>
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Cikis Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="service_exit_date" value="<?= e($fields['service_exit_date']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Police Baslangic Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="policy_start_date" value="<?= e($fields['policy_start_date']) ?>">
+        </label>
+        <label class="grid gap-2 text-sm font-semibold text-slate-700">
+          Police Bitis Tarihi
+          <input class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" type="date" name="policy_end_date" value="<?= e($fields['policy_end_date']) ?>">
+        </label>
+        <fieldset class="md:col-span-2 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <legend class="px-2 text-sm font-bold text-slate-800">Belge &amp; Fotograf Yukleme (opsiyonel)</legend>
+          <p class="text-xs text-slate-500">Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
+          <div id="attach-rows" class="grid gap-3"></div>
+          <div>
+            <button type="button" id="attach-add-row" class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100">+ Satir ekle</button>
           </div>
-        <?php endif; ?>
-        <?php if ($uploadWarnings): ?>
-          <div class="banner is-warn">
-            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-            <div><h3>Bazi dosyalar yuklenemedi</h3><ul style="margin:6px 0 0 16px;font-size:13px;font-weight:500"><?php foreach ($uploadWarnings as $w): ?><li><?= e($w) ?></li><?php endforeach; ?></ul></div>
-          </div>
-        <?php endif; ?>
-        <?php if ($error !== ''): ?>
-          <div class="banner is-danger">
-            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
-            <div><h3>Eksik bilgi</h3><p><?= e($error) ?></p></div>
-          </div>
-        <?php endif; ?>
+        </fieldset>
 
-        <form method="post" enctype="multipart/form-data" class="form-grid">
-          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-
-          <fieldset class="form-section full" style="display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))">
-            <legend>Arac &amp; Musteri</legend>
-            <label class="field"><span class="label">Plaka</span><input name="plate" value="<?= e($fields['plate']) ?>" required></label>
-            <label class="field"><span class="label">Ad Soyad</span><input name="customer_name" value="<?= e($fields['customer_name']) ?>" required></label>
-            <label class="field full" style="grid-column:1/-1"><span class="label">Sigorta Sirketi</span><input name="insurance_company" value="<?= e($fields['insurance_company']) ?>"></label>
-          </fieldset>
-
-          <fieldset class="form-section full" style="display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))">
-            <legend>Servis Durumu</legend>
-            <label class="field"><span class="label">Tamir Durumu</span><input name="repair_status" value="<?= e($fields['repair_status']) ?>"></label>
-            <label class="check-row"><input type="checkbox" name="mini_repair_has" <?= (int)$fields['mini_repair_has'] === 1 ? 'checked' : '' ?>> Mini onarim var</label>
-            <label class="field full" style="grid-column:1/-1"><span class="label">Mini Onarim Parca</span><input name="mini_repair_part" value="<?= e($fields['mini_repair_part']) ?>"></label>
-            <label class="field"><span class="label">Giris Tarihi</span><input type="date" name="service_entry_date" value="<?= e($fields['service_entry_date']) ?>" required></label>
-            <label class="field"><span class="label">Cikis Tarihi</span><input type="date" name="service_exit_date" value="<?= e($fields['service_exit_date']) ?>"></label>
-          </fieldset>
-
-          <fieldset class="form-section full" style="display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))">
-            <legend>Police</legend>
-            <label class="field"><span class="label">Police Baslangic</span><input type="date" name="policy_start_date" value="<?= e($fields['policy_start_date']) ?>"></label>
-            <label class="field"><span class="label">Police Bitis</span><input type="date" name="policy_end_date" value="<?= e($fields['policy_end_date']) ?>"></label>
-          </fieldset>
-
-          <fieldset class="form-section full">
-            <legend>Belge &amp; Fotograf (opsiyonel)</legend>
-            <p class="hint" style="margin:0 0 10px">Maks. 10 MB / dosya. PDF, JPG, PNG, WebP, DOCX, XLSX desteklenir.</p>
-            <div id="attach-rows" style="display:grid;gap:10px"></div>
-            <button type="button" id="attach-add-row" class="btn-ghost btn-sm" style="margin-top:10px">+ Satir ekle</button>
-          </fieldset>
-
-          <div class="full" style="display:flex;justify-content:flex-end;gap:10px;padding-top:8px">
-            <a class="btn-ghost" href="<?= e(panel_url('index.php')) ?>">Vazgec</a>
-            <button type="submit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Araci Ekle
-            </button>
-          </div>
-        </form>
+        <div class="md:col-span-2 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
+          <a class="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" href="<?= e(panel_url('index.php')) ?>">Vazgec</a>
+          <button class="inline-flex h-11 items-center justify-center rounded-lg bg-blue-600 px-6 text-sm font-bold text-white transition hover:bg-blue-700" type="submit">Araci ekle</button>
+        </div>
+      </form>
       </div>
     </section>
   </main>
@@ -227,13 +247,13 @@ include __DIR__ . '/includes/_layout_head.php';
     const cats = <?= json_encode(attachment_categories(), JSON_UNESCAPED_UNICODE) ?>;
     function row() {
       const div = document.createElement('div');
-      div.style.cssText = 'display:grid;grid-template-columns:200px 1fr auto;gap:10px;align-items:center';
+      div.className = 'grid gap-2 sm:grid-cols-[180px_1fr_auto] items-center';
       let opts = '';
       for (const k in cats) opts += `<option value="${k}">${cats[k]}</option>`;
       div.innerHTML = `
-        <select name="attachment_categories[]">${opts}</select>
-        <input type="file" name="attachments[]">
-        <button type="button" class="btn-ghost btn-sm">Kaldir</button>
+        <select name="attachment_categories[]" class="h-10 rounded-lg border border-slate-200 bg-white px-2 text-sm">${opts}</select>
+        <input type="file" name="attachments[]" class="h-10 rounded-lg border border-slate-200 bg-white px-2 text-sm">
+        <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100">Kaldir</button>
       `;
       div.querySelector('button').addEventListener('click', () => div.remove());
       wrap.appendChild(div);
@@ -242,4 +262,5 @@ include __DIR__ . '/includes/_layout_head.php';
     row(); row(); row();
   })();
   </script>
-<?php include __DIR__ . '/includes/_layout_foot.php'; ?>
+</body>
+</html>

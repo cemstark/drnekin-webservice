@@ -34,19 +34,6 @@ function index_url(array $overrides = []): string
     return panel_url('index.php' . ($query !== '' ? '?' . $query : ''));
 }
 
-function status_class(string $s): string
-{
-    $s = trim($s);
-    if ($s === '' || strcasecmp($s, 'Belirtilmedi') === 0) return 'is-muted';
-    $low = function_exists('mb_strtolower') ? mb_strtolower($s, 'UTF-8') : strtolower($s);
-    if (preg_match('/(haz[ıi]r|tamam|teslim|c[ıi]k|çık)/u', $low)) return 'is-ok';
-    if (preg_match('/(par[çc]a|bekl)/u', $low)) return 'is-warn';
-    if (preg_match('/(serv|onar|tamir)/u', $low)) return 'is-info';
-    if (preg_match('/(yeni|giri[şs]|kabul)/u', $low)) return 'is-info';
-    if (preg_match('/(iptal|sorun|hata)/u', $low)) return 'is-danger';
-    return 'is-muted';
-}
-
 $pdo = db();
 $month = preg_match('/^\d{4}-\d{2}$/', (string)($_GET['month'] ?? '')) ? (string)$_GET['month'] : '';
 $status = trim((string)($_GET['status'] ?? ''));
@@ -100,117 +87,85 @@ try {
 } catch (Throwable $e) {
     $policyExpiringSoon = [];
 }
-
-$user = current_user();
-$userName = $user['full_name'] ?: $user['username'];
-$userInitial = mb_strtoupper(mb_substr($userName, 0, 1, 'UTF-8'), 'UTF-8');
-$activePage = 'panel';
-include __DIR__ . '/includes/_layout_head.php';
 ?>
-  <main class="content">
-    <header class="page-head">
-      <div class="title-block">
-        <div class="eyebrow">Komuta Merkezi</div>
-        <h1>Servis &amp; Filo Paneli</h1>
-        <p class="sub">Anlik arac durumlari, sigorta hareketleri ve police bitis takibi</p>
-      </div>
-      <div class="actions">
-        <a class="btn-ghost btn-sm" href="<?= e(panel_url('import.php')) ?>">
-          <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Excel yukle
-        </a>
-        <a class="btn" href="<?= e(panel_url('add.php')) ?>">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Arac Ekle
-        </a>
-      </div>
-    </header>
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= e(panel_config('app_name')) ?></title>
+  <link rel="stylesheet" href="<?= e(panel_url('assets/panel.css')) ?>">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">DRN</div>
+      <h1>Servis Paneli</h1>
+    </div>
+    <nav>
+      <span><?= e(current_user()['full_name'] ?: current_user()['username']) ?></span>
+      <a href="<?= e(panel_url('add.php')) ?>">Arac ekle</a>
+      <a href="<?= e(panel_url('import.php')) ?>">Excel yukle</a>
+      <a href="<?= e(panel_url('install/migrate.php')) ?>">Migration</a>
+      <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
+    </nav>
+  </header>
 
-    <section class="bento" aria-label="Genel ozet">
-      <div class="b-card b-1">
-        <div class="b-top">
-          <span class="b-label">Toplam Arac</span>
-          <span class="b-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
-          </span>
-        </div>
-        <div class="b-value"><?= e((int)($summary['total'] ?? 0)) ?></div>
-        <div class="b-trend">Sistemdeki tum kayitlar</div>
+  <main class="mx-auto w-full max-w-[1420px] px-4 py-6 sm:px-6 lg:px-8">
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Toplam arac sayisi</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['total'] ?? 0)) ?></strong>
       </div>
-
-      <div class="b-card b-2">
-        <div class="b-top">
-          <span class="b-label">Iceride / Serviste</span>
-          <span class="b-icon is-warn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          </span>
-        </div>
-        <div class="b-value"><?= e((int)($summary['open_count'] ?? 0)) ?></div>
-        <div class="b-trend is-warn">Cikis tarihi bos olan arac</div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Serviste</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['open_count'] ?? 0)) ?></strong>
       </div>
-
-      <div class="b-card b-3">
-        <div class="b-top">
-          <span class="b-label">Mini Onarim</span>
-          <span class="b-icon is-ok">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </span>
-        </div>
-        <div class="b-value"><?= e((int)($summary['mini_count'] ?? 0)) ?></div>
-        <div class="b-trend is-ok">Aktif mini onarim kaydi</div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Mini onarim</span>
+        <strong class="mt-2 block text-3xl font-bold text-slate-950"><?= e((int)($summary['mini_count'] ?? 0)) ?></strong>
       </div>
-
-      <div class="b-card b-4">
-        <div class="b-top">
-          <span class="b-label">Son Senkron</span>
-          <span class="b-icon is-muted">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </span>
-        </div>
-        <div class="b-value small"><?= e($lastImport['created_at'] ?? '-') ?></div>
-        <div class="b-trend">Son Excel aktarimi</div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Son senkron</span>
+        <strong class="mt-2 block text-xl font-bold text-slate-950"><?= e($lastImport['created_at'] ?? '-') ?></strong>
       </div>
     </section>
 
     <?php if ($policyExpiringSoon !== []): ?>
-      <section class="card mb-4" style="margin-bottom:18px;overflow:hidden">
-        <div class="card-head" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-bottom-color:var(--warn-border)">
-          <div style="display:flex;align-items:center;gap:12px">
-            <span class="b-icon is-warn" style="width:38px;height:38px">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </span>
-            <div>
-              <h2 style="color:#78350f">Police bitisi yaklasan araclar</h2>
-              <div class="sub" style="color:#92400e">Bugunden itibaren 30 gun icinde biten policeler</div>
-            </div>
+      <section class="mt-5 overflow-hidden rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 px-4 py-3">
+          <div>
+            <h2 class="text-sm font-bold text-amber-900">Police bitisi yaklasan araclar</h2>
+            <p class="text-xs text-amber-800">Bugun ile 30 gun arasinda biten policeler.</p>
           </div>
-          <span class="status-pill is-warn"><?= count($policyExpiringSoon) ?> arac</span>
+          <span class="rounded-full bg-amber-200 px-3 py-1 text-xs font-bold text-amber-900"><?= count($policyExpiringSoon) ?> arac</span>
         </div>
-        <div class="table-wrap">
-          <table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
             <thead>
-              <tr>
-                <th>Plaka</th>
-                <th>Musteri</th>
-                <th>Sigorta</th>
-                <th>Bitis</th>
-                <th>Kalan</th>
-                <th></th>
+              <tr class="text-left text-xs uppercase text-amber-900">
+                <th class="px-4 py-2">Plaka</th>
+                <th class="px-4 py-2">Musteri</th>
+                <th class="px-4 py-2">Sigorta</th>
+                <th class="px-4 py-2">Bitis</th>
+                <th class="px-4 py-2">Kalan</th>
+                <th class="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody>
               <?php foreach ($policyExpiringSoon as $p):
                 $d = (int)$p['days_left'];
-                $pillClass = $d <= 7 ? 'is-danger' : ($d <= 14 ? 'is-warn' : 'is-info');
+                $rowClass = $d <= 7 ? 'text-red-700 font-semibold' : 'text-amber-900';
               ?>
-                <tr>
-                  <td><strong><?= e($p['plate']) ?></strong></td>
-                  <td><?= e($p['customer_name']) ?></td>
-                  <td><?= e($p['insurance_company'] ?: '-') ?></td>
-                  <td><?= e($p['policy_end_date']) ?></td>
-                  <td><span class="status-pill <?= $pillClass ?>"><?= e($d) ?> gun</span></td>
-                  <td style="text-align:right">
-                    <a class="btn-ghost btn-xs" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
+                <tr class="border-t border-amber-100 <?= $rowClass ?>">
+                  <td class="px-4 py-2 font-bold"><?= e($p['plate']) ?></td>
+                  <td class="px-4 py-2"><?= e($p['customer_name']) ?></td>
+                  <td class="px-4 py-2"><?= e($p['insurance_company'] ?: '-') ?></td>
+                  <td class="px-4 py-2"><?= e($p['policy_end_date']) ?></td>
+                  <td class="px-4 py-2"><?= e($d) ?> gun</td>
+                  <td class="px-4 py-2 text-right">
+                    <a class="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -220,35 +175,35 @@ include __DIR__ . '/includes/_layout_head.php';
       </section>
     <?php endif; ?>
 
-    <section class="card" style="margin-bottom:14px;overflow:hidden" aria-label="Sigorta filtreleri">
-      <div class="card-head">
+    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Sigorta filtreleri">
+      <div class="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h2>Sigorta Sirketleri</h2>
-          <div class="sub">Sigorta sirketine gore hizli filtrele</div>
+          <h2 class="text-sm font-semibold text-slate-950">Sigorta filtreleri</h2>
+          <p class="text-xs text-slate-500">Sigorta sirketine gore hizli filtrele</p>
         </div>
         <?php if ($insurance !== ''): ?>
-          <a class="btn-ghost btn-sm" href="<?= e(index_url(['insurance' => null])) ?>">Filtreyi kaldir</a>
+          <a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" href="<?= e(index_url(['insurance' => null])) ?>">Filtreyi kaldir</a>
         <?php endif; ?>
       </div>
-      <div class="card-pad">
-        <div class="chip-row">
-          <a class="chip <?= $insurance === '' ? 'active' : '' ?>" href="<?= e(index_url(['insurance' => null])) ?>">Tumu</a>
-          <?php foreach ($insurances as $item): ?>
-            <a class="chip <?= $insurance === $item['insurance_company'] ? 'active' : '' ?>" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
-              <?= e($item['insurance_company']) ?>
-              <span class="count"><?= e($item['total']) ?></span>
-            </a>
-          <?php endforeach; ?>
-        </div>
+      <div class="flex flex-wrap gap-2">
+      <a class="<?= $insurance === '' ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => null])) ?>">
+        Tum sigortalar
+      </a>
+      <?php foreach ($insurances as $item): ?>
+        <a class="<?= $insurance === $item['insurance_company'] ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50' ?> inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold" href="<?= e(index_url(['insurance' => $item['insurance_company']])) ?>">
+          <?= e($item['insurance_company']) ?>
+          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"><?= e($item['total']) ?></span>
+        </a>
+      <?php endforeach; ?>
       </div>
     </section>
 
-    <form class="filters" method="get">
+    <form class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(260px,1.4fr)_minmax(180px,1fr)_minmax(180px,1fr)_auto_auto]" method="get">
       <?php if ($insurance !== ''): ?>
         <input type="hidden" name="insurance" value="<?= e($insurance) ?>">
       <?php endif; ?>
-      <input name="q" value="<?= e($q) ?>" placeholder="Plaka veya musteri ara">
-      <select name="month">
+      <input class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="q" value="<?= e($q) ?>" placeholder="Plaka veya isim ara">
+      <select class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="month">
         <option value="">Tum aylar</option>
         <?php foreach ($months as $item): ?>
           <option value="<?= e($item['service_month']) ?>" <?= $month === $item['service_month'] ? 'selected' : '' ?>>
@@ -256,29 +211,27 @@ include __DIR__ . '/includes/_layout_head.php';
           </option>
         <?php endforeach; ?>
       </select>
-      <select name="status">
+      <select class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" name="status">
         <option value="">Tum durumlar</option>
         <?php foreach ($statuses as $item): ?>
           <option value="<?= e($item) ?>" <?= $status === $item ? 'selected' : '' ?>><?= e($item) ?></option>
         <?php endforeach; ?>
       </select>
-      <button type="submit">Filtrele</button>
-      <a class="btn-ghost" href="<?= e(panel_url('index.php')) ?>">Temizle</a>
+      <button class="h-11 rounded-lg bg-blue-600 px-6 text-sm font-bold text-white transition hover:bg-blue-700" type="submit">Filtrele</button>
+      <a class="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" href="<?= e(panel_url('index.php')) ?>">Temizle</a>
     </form>
 
-    <section class="table-card">
+    <section class="table-card mt-4">
       <div class="table-head">
-        <div>
-          <h2>Arac Kayitlari</h2>
-          <span><?= count($records) ?> kayit gosteriliyor</span>
-        </div>
+        <h2>Arac kayitlari</h2>
+        <span><?= count($records) ?> kayit gosteriliyor</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Plaka</th>
-              <th>Musteri / Filo</th>
+              <th>Ad Soyad</th>
               <th>Sigorta</th>
               <th>Tamir Durumu</th>
               <th>Mini Onarim</th>
@@ -288,21 +241,18 @@ include __DIR__ . '/includes/_layout_head.php';
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($records as $record):
-              $cls = status_class((string)$record['repair_status']);
-              $statusLabel = $record['repair_status'] !== '' ? $record['repair_status'] : 'Belirtilmedi';
-            ?>
+            <?php foreach ($records as $record): ?>
               <tr>
                 <td><strong><?= e($record['plate']) ?></strong></td>
                 <td><?= e($record['customer_name']) ?></td>
                 <td><?= e($record['insurance_company'] ?: '-') ?></td>
-                <td><span class="status-pill <?= $cls ?>"><?= e($statusLabel) ?></span></td>
-                <td><?= ((int)$record['mini_repair_has'] === 1) ? '<span class="status-pill is-ok">' . e($record['mini_repair_part'] ?: 'Var') . '</span>' : '<span class="status-pill is-muted">Yok</span>' ?></td>
+                <td><span class="pill"><?= e($record['repair_status']) ?></span></td>
+                <td><?= ((int)$record['mini_repair_has'] === 1) ? e($record['mini_repair_part'] ?: 'Var') : 'Yok' ?></td>
                 <td><?= e($record['service_entry_date']) ?></td>
                 <td><?= e($record['service_exit_date'] ?: '-') ?></td>
-                <td style="white-space:nowrap;text-align:right">
-                  <a class="btn-ghost btn-xs" href="<?= e(panel_url('view.php?id=' . (int)$record['id'])) ?>">Detay</a>
-                  <a class="btn-soft btn-xs" style="margin-left:4px" href="<?= e(panel_url('edit.php?id=' . (int)$record['id'])) ?>">Duzenle</a>
+                <td class="whitespace-nowrap">
+                  <a class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50" href="<?= e(panel_url('view.php?id=' . (int)$record['id'])) ?>">Detay</a>
+                  <a class="ml-1 inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100" href="<?= e(panel_url('edit.php?id=' . (int)$record['id'])) ?>">Duzenle</a>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -314,4 +264,5 @@ include __DIR__ . '/includes/_layout_head.php';
       </div>
     </section>
   </main>
-<?php include __DIR__ . '/includes/_layout_foot.php'; ?>
+</body>
+</html>
