@@ -82,15 +82,33 @@ if ($q !== '') {
 }
 
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+$perPageOptions = [50, 100, 250];
+$perPage = (int)($_GET['per_page'] ?? 50);
+if (!in_array($perPage, $perPageOptions, true)) {
+    $perPage = 50;
+}
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM service_records $whereSql");
+$countStmt->execute($params);
+$totalRecords = (int)$countStmt->fetchColumn();
+$totalPages = max(1, (int)ceil($totalRecords / $perPage));
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $perPage;
+
 $stmt = $pdo->prepare(
     "SELECT id, plate, customer_name, insurance_type, insurance_company, repair_status,
             mini_repair_has, mini_repair_part, service_entry_date, service_exit_date, updated_at
      FROM service_records $whereSql
      ORDER BY service_entry_date DESC, updated_at DESC
-     LIMIT 500"
+     LIMIT $perPage OFFSET $offset"
 );
 $stmt->execute($params);
 $records = $stmt->fetchAll();
+$showingStart = $totalRecords === 0 ? 0 : $offset + 1;
+$showingEnd = $offset + count($records);
 
 $months = $pdo->query('SELECT service_month, COUNT(*) total FROM service_records GROUP BY service_month ORDER BY service_month DESC LIMIT 24')->fetchAll();
 $statusesFromDb = $pdo->query('SELECT repair_status FROM service_records WHERE repair_status <> "" GROUP BY repair_status ORDER BY repair_status')->fetchAll(PDO::FETCH_COLUMN);
@@ -206,13 +224,13 @@ try {
           <div class="filter-subtitle">Kayitlari hizmet tipine gore hizli filtrele</div>
         </div>
         <?php if ($type !== ''): ?>
-          <a class="btn-secondary" href="<?= e(index_url(['type' => null, 'insurance' => null])) ?>">Filtreyi kaldir</a>
+          <a class="btn-secondary" href="<?= e(index_url(['type' => null, 'insurance' => null, 'page' => null])) ?>">Filtreyi kaldir</a>
         <?php endif; ?>
       </div>
       <div class="filter-pills">
-        <a class="<?= $type === '' ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => null, 'insurance' => null])) ?>">Tum araclar</a>
+        <a class="<?= $type === '' ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => null, 'insurance' => null, 'page' => null])) ?>">Tum araclar</a>
         <?php foreach (insurance_type_options() as $key => $label): ?>
-          <a class="<?= $type === $key ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => $key, 'insurance' => null])) ?>"><?= e($label) ?></a>
+          <a class="<?= $type === $key ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => $key, 'insurance' => null, 'page' => null])) ?>"><?= e($label) ?></a>
         <?php endforeach; ?>
       </div>
     </section>
@@ -243,7 +261,14 @@ try {
     <section class="table-card">
       <div class="table-head">
         <h2>Arac kayitlari</h2>
-        <span><?= count($records) ?> kayit gosteriliyor</span>
+        <div class="table-head-tools">
+          <span><?= e($showingStart) ?>-<?= e($showingEnd) ?> / <?= e($totalRecords) ?> kayit</span>
+          <div class="per-page">
+            <?php foreach ($perPageOptions as $option): ?>
+              <a class="<?= $perPage === $option ? 'active' : '' ?>" href="<?= e(index_url(['per_page' => $option, 'page' => null])) ?>"><?= e($option) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
       <?php if ($records === []): ?>
         <div class="empty-state">
@@ -286,6 +311,13 @@ try {
           </tbody>
         </table>
       </div>
+      <?php endif; ?>
+      <?php if ($totalPages > 1): ?>
+        <nav class="pagination" aria-label="Sayfalama">
+          <a class="<?= $page <= 1 ? 'disabled' : '' ?>" href="<?= e($page <= 1 ? '#' : index_url(['page' => $page - 1])) ?>">Onceki</a>
+          <span>Sayfa <?= e($page) ?> / <?= e($totalPages) ?></span>
+          <a class="<?= $page >= $totalPages ? 'disabled' : '' ?>" href="<?= e($page >= $totalPages ? '#' : index_url(['page' => $page + 1])) ?>">Sonraki</a>
+        </nav>
       <?php endif; ?>
     </section>
   </main>

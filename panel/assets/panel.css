@@ -430,6 +430,43 @@ button[type="submit"]:hover, .btn-primary:hover {
   font-weight: 500;
 }
 
+.table-head-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.per-page {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.per-page a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.per-page a.active {
+  background: var(--surface);
+  color: var(--accent-dk);
+  box-shadow: var(--shadow);
+}
+
 .table-wrap { overflow-x: auto; }
 
 table {
@@ -466,6 +503,49 @@ tbody tr {
 }
 
 tbody tr:hover { background: var(--surface-2); }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.pagination a,
+.pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pagination a {
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  background: var(--surface);
+}
+
+.pagination a:not(.disabled):hover {
+  border-color: var(--accent-bdr);
+  background: var(--accent-bg);
+  color: var(--accent-dk);
+}
+
+.pagination a.disabled {
+  pointer-events: none;
+  opacity: .45;
+}
+
+.pagination span {
+  color: var(--muted);
+}
 
 /* ── Badges / Pills ────────────────────────────────────────────────────────── */
 .pill, .type-badge {
@@ -1161,6 +1241,16 @@ input[type="radio"] {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .table-head-tools,
+  .pagination {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
   }
 
   .filter-pills {
