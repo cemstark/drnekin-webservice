@@ -134,6 +134,45 @@ img { max-width: 100%; height: auto; }
   color: var(--accent-dk);
 }
 
+/* Vurgulu nav butonu (Deger Kaybi Ekle) */
+.topbar nav a.nav-cta {
+  background: linear-gradient(135deg, #e63946 0%, #c92a3a 100%);
+  color: #fff;
+  border-color: #c92a3a;
+  box-shadow: 0 3px 10px rgba(230,57,70,.32);
+  font-weight: 700;
+}
+.topbar nav a.nav-cta:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(230,57,70,.42);
+  color: #fff;
+}
+
+/* Metric card — Serviste aktif yeşil vurgu */
+.metric-card.metric-card-active {
+  background: linear-gradient(135deg, #f0fff4 0%, #fff 100%);
+  border-color: #c8f7d0;
+  position: relative;
+}
+.metric-card.metric-card-active::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22,163,74,.55);
+  animation: metricCardPulse 1.6s ease-out infinite;
+}
+@keyframes metricCardPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(22,163,74,.55); }
+  70%  { box-shadow: 0 0 0 12px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+
 /* eyebrow — eski kodla uyumluluk */
 .eyebrow { display: none; }
 

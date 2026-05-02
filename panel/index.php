@@ -141,7 +141,7 @@ $showingEnd = $offset + count($records);
 $months = $pdo->query('SELECT service_month, COUNT(*) total FROM service_records GROUP BY service_month ORDER BY service_month DESC LIMIT 24')->fetchAll();
 $statusesFromDb = $pdo->query('SELECT repair_status FROM service_records WHERE repair_status <> "" GROUP BY repair_status ORDER BY repair_status')->fetchAll(PDO::FETCH_COLUMN);
 $statuses = array_values(array_unique(array_merge(array_keys(repair_status_options()), $statusesFromDb)));
-$summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(mini_repair_has = 1) mini_count FROM service_records')->fetch();
+$summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(service_exit_date IS NOT NULL) delivered_count FROM service_records')->fetch();
 $lastImport = $pdo->query('SELECT created_at FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
 
 $dkRecords = [];
@@ -189,6 +189,7 @@ try {
     <nav>
       <?php render_current_user_badge(); ?>
       <a href="<?= e(panel_url('add.php')) ?>">Arac ekle</a>
+      <a href="<?= e(panel_url('dk_edit.php')) ?>" class="nav-cta">+ Deger Kaybi Dosyasi</a>
       <a href="<?= e(panel_url('import.php')) ?>">Excel yukle</a>
       <a href="<?= e(panel_url('install/migrate.php')) ?>">Migration</a>
       <a href="<?= e(panel_url('logout.php')) ?>">Cikis</a>
@@ -201,17 +202,13 @@ try {
         <div class="metric-label">Toplam arac sayisi</div>
         <strong class="metric-value"><?= e((int)($summary['total'] ?? 0)) ?></strong>
       </div>
-      <div class="metric-card">
-        <div class="metric-label">Serviste</div>
-        <strong class="metric-value" style="color:var(--amber)"><?= e((int)($summary['open_count'] ?? 0)) ?></strong>
+      <div class="metric-card metric-card-active">
+        <div class="metric-label">Serviste aktif</div>
+        <strong class="metric-value" style="color:#16a34a"><?= e((int)($summary['open_count'] ?? 0)) ?></strong>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Mini onarim</div>
-        <strong class="metric-value" style="color:var(--purple)"><?= e((int)($summary['mini_count'] ?? 0)) ?></strong>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Son senkron</div>
-        <strong class="metric-value" style="font-size:18px;letter-spacing:-0.01em"><?= e(format_tr_datetime($lastImport['created_at'] ?? null)) ?></strong>
+        <div class="metric-label">Teslim edildi</div>
+        <strong class="metric-value" style="color:#3754d8"><?= e((int)($summary['delivered_count'] ?? 0)) ?></strong>
       </div>
     </section>
 
@@ -403,6 +400,7 @@ try {
               <th data-col="13">Durum</th>
               <th data-col="14">Acente</th>
               <th data-col="15">Aciklama</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -426,6 +424,10 @@ try {
                 <td data-label="Durum"><span class="pill dk-pill-<?= e($tone) ?>"><?= e($dk['durum'] ?: 'Belirsiz') ?></span></td>
                 <td data-label="Acente" style="color:var(--muted)"><?= e($dk['acente'] ?: '-') ?></td>
                 <td data-label="Aciklama" style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis"><?= e($dk['aciklama'] ?: '-') ?></td>
+                <td data-label="Islem" style="text-align:right;white-space:nowrap">
+                  <a class="btn-table" href="<?= e(panel_url('dk_view.php?id=' . (int)$dk['id'])) ?>">Detay</a>
+                  <a class="btn-table-primary" href="<?= e(panel_url('dk_edit.php?id=' . (int)$dk['id'])) ?>">Duzenle</a>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>
