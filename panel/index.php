@@ -217,23 +217,6 @@ try {
       </section>
     <?php endif; ?>
 
-    <section class="filter-panel" aria-label="Arac filtreleri">
-      <div class="filter-panel-header">
-        <div>
-          <div class="filter-title">Arac filtreleri</div>
-          <div class="filter-subtitle">Kayitlari hizmet tipine gore hizli filtrele</div>
-        </div>
-        <?php if ($type !== ''): ?>
-          <a class="btn-secondary" href="<?= e(index_url(['type' => null, 'insurance' => null, 'page' => null])) ?>">Filtreyi kaldir</a>
-        <?php endif; ?>
-      </div>
-      <div class="filter-pills">
-        <a class="<?= $type === '' ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => null, 'insurance' => null, 'page' => null])) ?>">Tum araclar</a>
-        <?php foreach (insurance_type_options() as $key => $label): ?>
-          <a class="<?= $type === $key ? 'filter-pill active' : 'filter-pill' ?>" href="<?= e(index_url(['type' => $key, 'insurance' => null, 'page' => null])) ?>"><?= e($label) ?></a>
-        <?php endforeach; ?>
-      </div>
-    </section>
 
     <form class="filters" method="get">
       <?php if ($type !== ''): ?>
