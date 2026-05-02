@@ -280,14 +280,14 @@ try {
         <table>
           <thead>
             <tr>
-              <th>Plaka</th>
-              <th>Ad Soyad</th>
-              <th>Arac Filtresi</th>
-              <th>Sigorta</th>
-              <th>Tamir Durumu</th>
-              <th>Mini Onarim</th>
-              <th>Giris</th>
-              <th>Cikis</th>
+              <th data-col="0">Plaka</th>
+              <th data-col="1">Ad Soyad</th>
+              <th data-col="2">Arac Filtresi</th>
+              <th data-col="3">Sigorta</th>
+              <th data-col="4">Tamir Durumu</th>
+              <th data-col="5">Mini Onarim</th>
+              <th data-col="6">Giris</th>
+              <th data-col="7">Cikis</th>
               <th></th>
             </tr>
           </thead>
@@ -321,5 +321,147 @@ try {
       <?php endif; ?>
     </section>
   </main>
+  <script>
+  (function () {
+    var table = document.querySelector('.table-card .table-wrap table');
+    if (!table) return;
+    var filterHeaders = Array.from(table.querySelectorAll('thead th[data-col]'));
+    var tbody = table.querySelector('tbody');
+    if (!filterHeaders.length || !tbody) return;
+
+    var activeFilters = {};
+    var currentCol = -1;
+
+    var popup = document.createElement('div');
+    popup.id = 'cfp';
+    popup.innerHTML =
+      '<div class="cfp-head"><span class="cfp-title"></span><button type="button" class="cfp-clear-btn">Temizle</button></div>' +
+      '<input type="text" class="cfp-search" placeholder="Ara...">' +
+      '<div class="cfp-list"></div>' +
+      '<div class="cfp-foot"><button type="button" class="cfp-apply">Uygula</button></div>';
+    popup.style.display = 'none';
+    document.body.appendChild(popup);
+
+    var popupTitle = popup.querySelector('.cfp-title');
+    var popupSearch = popup.querySelector('.cfp-search');
+    var popupList = popup.querySelector('.cfp-list');
+
+    popup.querySelector('.cfp-clear-btn').addEventListener('click', function () {
+      popupList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+      popupSearch.value = '';
+      filterItems('');
+    });
+
+    popupSearch.addEventListener('input', function () { filterItems(this.value); });
+
+    function filterItems(q) {
+      var lq = q.toLowerCase();
+      popupList.querySelectorAll('.cfp-item').forEach(function (item) {
+        item.style.display = (!lq || item.dataset.val.toLowerCase().indexOf(lq) !== -1) ? '' : 'none';
+      });
+    }
+
+    popup.querySelector('.cfp-apply').addEventListener('click', applyAndClose);
+
+    document.addEventListener('mousedown', function (e) {
+      if (popup.style.display !== 'none' && !popup.contains(e.target) && !e.target.closest('.cfp-btn')) {
+        closePopup();
+      }
+    });
+
+    filterHeaders.forEach(function (th) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cfp-btn';
+      btn.title = 'Filtrele';
+      btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 2.5h8M2.5 5h5M4 7.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      th.appendChild(btn);
+
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var col = parseInt(th.dataset.col);
+        if (popup.style.display !== 'none' && currentCol === col) { closePopup(); return; }
+        openPopup(btn, col, th.childNodes[0].textContent.trim());
+      });
+    });
+
+    function getColValues(col) {
+      var vals = new Set();
+      Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
+        var td = tr.cells[col];
+        if (td) vals.add(td.textContent.trim().replace(/\s+/g, ' '));
+      });
+      return Array.from(vals).sort();
+    }
+
+    function openPopup(btn, col, title) {
+      currentCol = col;
+      popupTitle.textContent = title;
+      popupSearch.value = '';
+      var selected = activeFilters[col] || new Set();
+      var vals = getColValues(col);
+      popupList.innerHTML = '';
+      if (!vals.length) {
+        popupList.innerHTML = '<span class="cfp-empty">Veri yok</span>';
+      } else {
+        vals.forEach(function (v) {
+          var label = document.createElement('label');
+          label.className = 'cfp-item';
+          label.dataset.val = v;
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = v;
+          cb.checked = selected.has(v);
+          var sp = document.createElement('span');
+          sp.textContent = v || '(Bos)';
+          label.appendChild(cb);
+          label.appendChild(sp);
+          popupList.appendChild(label);
+        });
+      }
+      popup.style.display = 'block';
+      var rect = btn.getBoundingClientRect();
+      var sy = window.pageYOffset, sx = window.pageXOffset, pw = 230;
+      var top = rect.bottom + sy + 4;
+      var left = Math.min(rect.left + sx, window.innerWidth + sx - pw - 8);
+      popup.style.top = top + 'px';
+      popup.style.left = left + 'px';
+    }
+
+    function closePopup() { popup.style.display = 'none'; currentCol = -1; }
+
+    function applyAndClose() {
+      var col = currentCol;
+      var checked = Array.from(popupList.querySelectorAll('input[type="checkbox"]:checked'));
+      if (!checked.length) { delete activeFilters[col]; }
+      else { activeFilters[col] = new Set(checked.map(function (cb) { return cb.value; })); }
+      closePopup();
+      applyFilters();
+      updateHeaders();
+    }
+
+    function applyFilters() {
+      var hasFilters = Object.keys(activeFilters).length > 0;
+      Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
+        if (!hasFilters) { tr.style.display = ''; return; }
+        var show = true;
+        for (var col in activeFilters) {
+          var td = tr.cells[parseInt(col)];
+          if (!td) continue;
+          if (!activeFilters[col].has(td.textContent.trim().replace(/\s+/g, ' '))) { show = false; break; }
+        }
+        tr.style.display = show ? '' : 'none';
+      });
+    }
+
+    function updateHeaders() {
+      filterHeaders.forEach(function (th) {
+        var col = parseInt(th.dataset.col);
+        var active = activeFilters[col] && activeFilters[col].size > 0;
+        th.classList.toggle('cfp-active', active);
+      });
+    }
+  })();
+  </script>
 </body>
 </html>
