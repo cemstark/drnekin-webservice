@@ -382,22 +382,22 @@ try {
         <table>
           <thead>
             <tr>
-              <th>Plaka</th>
-              <th>Adi Soyadi</th>
-              <th>Tel</th>
-              <th>Kasko/Trafik</th>
-              <th>Hasar Tarihi</th>
-              <th>Police No</th>
-              <th>Dosya No</th>
-              <th>Fatura Tarihi</th>
-              <th>Eksper</th>
-              <th>Teminat</th>
-              <th>Fatura Tutari</th>
-              <th>Yatma/Hak Mahrum</th>
-              <th>Takip</th>
-              <th>Durum</th>
-              <th>Acente</th>
-              <th>Aciklama</th>
+              <th data-col="0">Plaka</th>
+              <th data-col="1">Adi Soyadi</th>
+              <th data-col="2">Tel</th>
+              <th data-col="3">Kasko/Trafik</th>
+              <th data-col="4">Hasar Tarihi</th>
+              <th data-col="5">Police No</th>
+              <th data-col="6">Dosya No</th>
+              <th data-col="7">Fatura Tarihi</th>
+              <th data-col="8">Eksper</th>
+              <th data-col="9">Teminat</th>
+              <th data-col="10">Fatura Tutari</th>
+              <th data-col="11">Yatma/Hak Mahrum</th>
+              <th data-col="12">Takip</th>
+              <th data-col="13">Durum</th>
+              <th data-col="14">Acente</th>
+              <th data-col="15">Aciklama</th>
             </tr>
           </thead>
           <tbody>
@@ -444,17 +444,8 @@ try {
     });
   })();
 
-  // Column filter (arac kayitlari tablosu)
+  // Column filter — her iki tablo icin calisir
   (function () {
-    var table = document.querySelector('#panel-arac .table-wrap table');
-    if (!table) return;
-    var filterHeaders = Array.from(table.querySelectorAll('thead th[data-col]'));
-    var tbody = table.querySelector('tbody');
-    if (!filterHeaders.length || !tbody) return;
-
-    var activeFilters = {};
-    var currentCol = -1;
-
     var popup = document.createElement('div');
     popup.id = 'cfp';
     popup.innerHTML =
@@ -465,16 +456,20 @@ try {
     popup.style.display = 'none';
     document.body.appendChild(popup);
 
-    var popupTitle = popup.querySelector('.cfp-title');
+    var popupTitle  = popup.querySelector('.cfp-title');
     var popupSearch = popup.querySelector('.cfp-search');
-    var popupList = popup.querySelector('.cfp-list');
+    var popupList   = popup.querySelector('.cfp-list');
+
+    var currentCol   = -1;
+    var currentTbody = null;
+    var currentHeaders = null;
+    var activeFilters  = {};  // tableId -> { col -> Set }
 
     popup.querySelector('.cfp-clear-btn').addEventListener('click', function () {
       popupList.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
       popupSearch.value = '';
       filterItems('');
     });
-
     popupSearch.addEventListener('input', function () { filterItems(this.value); });
 
     function filterItems(q) {
@@ -492,24 +487,45 @@ try {
       }
     });
 
-    filterHeaders.forEach(function (th) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'cfp-btn';
-      btn.title = 'Filtrele';
-      btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 2.5h8M2.5 5h5M4 7.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-      th.appendChild(btn);
+    function initTable(tableEl) {
+      var headers = Array.from(tableEl.querySelectorAll('thead th[data-col]'));
+      var tbody   = tableEl.querySelector('tbody');
+      if (!headers.length || !tbody) return;
+      var tableId = tableEl.closest('section').id || Math.random().toString(36).slice(2);
+      activeFilters[tableId] = {};
 
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var col = parseInt(th.dataset.col);
-        if (popup.style.display !== 'none' && currentCol === col) { closePopup(); return; }
-        openPopup(btn, col, th.childNodes[0].textContent.trim());
+      headers.forEach(function (th) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cfp-btn';
+        btn.title = 'Filtrele';
+        btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 2.5h8M2.5 5h5M4 7.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        th.appendChild(btn);
+
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var col = parseInt(th.dataset.col);
+          if (popup.style.display !== 'none' && currentCol === col && currentTbody === tbody) {
+            closePopup(); return;
+          }
+          currentTbody   = tbody;
+          currentHeaders = headers;
+          currentCol     = col;
+          currentTableId = tableId;
+          openPopup(btn, col, th.childNodes[0].textContent.trim(), tableId);
+        });
       });
-    });
+    }
 
-    function getColValues(col) {
+    var currentTableId = null;
+
+    function getColValues(col, tbody) {
       var vals = new Set();
+      Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
+        if (tr.style.display === 'none') return;
+        var td = tr.cells[col];
+        if (td) vals.add(td.textContent.trim().replace(/\s+/g, ' '));
+      });
       Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
         var td = tr.cells[col];
         if (td) vals.add(td.textContent.trim().replace(/\s+/g, ' '));
@@ -517,12 +533,11 @@ try {
       return Array.from(vals).sort();
     }
 
-    function openPopup(btn, col, title) {
-      currentCol = col;
+    function openPopup(btn, col, title, tableId) {
       popupTitle.textContent = title;
       popupSearch.value = '';
-      var selected = activeFilters[col] || new Set();
-      var vals = getColValues(col);
+      var selected = (activeFilters[tableId] && activeFilters[tableId][col]) || new Set();
+      var vals = getColValues(col, currentTbody);
       popupList.innerHTML = '';
       if (!vals.length) {
         popupList.innerHTML = '<span class="cfp-empty">Veri yok</span>';
@@ -545,45 +560,46 @@ try {
       popup.style.display = 'block';
       var rect = btn.getBoundingClientRect();
       var sy = window.pageYOffset, sx = window.pageXOffset, pw = 230;
-      var top = rect.bottom + sy + 4;
-      var left = Math.min(rect.left + sx, window.innerWidth + sx - pw - 8);
-      popup.style.top = top + 'px';
-      popup.style.left = left + 'px';
+      popup.style.top  = (rect.bottom + sy + 4) + 'px';
+      popup.style.left = Math.min(rect.left + sx, window.innerWidth + sx - pw - 8) + 'px';
     }
 
     function closePopup() { popup.style.display = 'none'; currentCol = -1; }
 
     function applyAndClose() {
       var col = currentCol;
+      var tid = currentTableId;
       var checked = Array.from(popupList.querySelectorAll('input[type="checkbox"]:checked'));
-      if (!checked.length) { delete activeFilters[col]; }
-      else { activeFilters[col] = new Set(checked.map(function (cb) { return cb.value; })); }
+      if (!activeFilters[tid]) activeFilters[tid] = {};
+      if (!checked.length) { delete activeFilters[tid][col]; }
+      else { activeFilters[tid][col] = new Set(checked.map(function (cb) { return cb.value; })); }
       closePopup();
-      applyFilters();
-      updateHeaders();
+      applyFilters(currentTbody, activeFilters[tid]);
+      updateHeaders(currentHeaders, activeFilters[tid]);
     }
 
-    function applyFilters() {
-      var hasFilters = Object.keys(activeFilters).length > 0;
+    function applyFilters(tbody, filters) {
+      var hasFilters = Object.keys(filters).length > 0;
       Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
         if (!hasFilters) { tr.style.display = ''; return; }
         var show = true;
-        for (var col in activeFilters) {
+        for (var col in filters) {
           var td = tr.cells[parseInt(col)];
           if (!td) continue;
-          if (!activeFilters[col].has(td.textContent.trim().replace(/\s+/g, ' '))) { show = false; break; }
+          if (!filters[col].has(td.textContent.trim().replace(/\s+/g, ' '))) { show = false; break; }
         }
         tr.style.display = show ? '' : 'none';
       });
     }
 
-    function updateHeaders() {
-      filterHeaders.forEach(function (th) {
+    function updateHeaders(headers, filters) {
+      headers.forEach(function (th) {
         var col = parseInt(th.dataset.col);
-        var active = activeFilters[col] && activeFilters[col].size > 0;
-        th.classList.toggle('cfp-active', active);
+        th.classList.toggle('cfp-active', !!(filters[col] && filters[col].size > 0));
       });
     }
+
+    document.querySelectorAll('.table-wrap table').forEach(initTable);
   })();
   </script>
 </body>
