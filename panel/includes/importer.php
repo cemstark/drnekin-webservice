@@ -561,11 +561,19 @@ function normalize_dk_money(string $value): ?float
 
 function dk_duplicate_exists(PDO $pdo, array $rec): bool
 {
-    $stmt = $pdo->prepare(
-        'SELECT id FROM deger_kaybi_records WHERE plaka = ? AND adi_soyadi = ? AND dosya_no = ? LIMIT 1'
-    );
-    $stmt->execute([$rec['plaka'], $rec['adi_soyadi'], $rec['dosya_no']]);
-    return (bool)$stmt->fetchColumn();
+    if ($rec['dosya_no'] !== '') {
+        $stmt = $pdo->prepare('SELECT id FROM deger_kaybi_records WHERE plaka = ? AND dosya_no = ? LIMIT 1');
+        $stmt->execute([$rec['plaka'], $rec['dosya_no']]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    if ($rec['hasar_tarihi'] !== null) {
+        $stmt = $pdo->prepare('SELECT id FROM deger_kaybi_records WHERE plaka = ? AND adi_soyadi = ? AND hasar_tarihi = ? LIMIT 1');
+        $stmt->execute([$rec['plaka'], $rec['adi_soyadi'], $rec['hasar_tarihi']]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    return false;
 }
 
 function insert_dk_record(PDO $pdo, array $rec): void
