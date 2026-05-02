@@ -13,14 +13,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/widgets.css?v=2">
+  <link rel="stylesheet" href="css/widgets.css?v=7">
   <style>body { margin: 0; font-family: 'Inter', system-ui, sans-serif; }</style>
 </head>
 <body class="admin-shell">
 
   <header class="admin-header">
-    <h1>🧮 DRN.EKİN OTO — Değer Kaybı Hesaplama</h1>
-    <a href="index.html" style="color:#fff;text-decoration:none;font-size:13px;opacity:.85;">← Ana Sayfa</a>
+    <div class="admin-header-left">
+      <h1>🧮 DRN.EKİN OTO — Değer Kaybı Hesaplama</h1>
+    </div>
+    <div class="admin-header-right">
+      <button id="dk-header-add" class="dk-cta-btn dk-cta-btn-pulse" type="button" title="Yeni değer kaybı dosyası oluştur">
+        <span class="dk-cta-icon">+</span>
+        <span class="dk-cta-label">Değer Kaybı Dosyası Ekle</span>
+      </button>
+      <a href="index.html" class="dk-header-link">← Ana Sayfa</a>
+    </div>
   </header>
 
   <main class="admin-main">
@@ -43,31 +51,37 @@
       </div>
     </section>
 
-    <h2 style="font-size:16px;color:#1a1a2e;margin:28px 0 8px;">Araçlar</h2>
-    <div class="tool-grid">
-      <button id="dk-launcher" type="button">
-        <span class="tool-icon">🧮</span>
-        <span>Değer Kaybı Hesaplama</span>
-        <span class="tool-desc">SBM standardına göre tahmini değer kaybı + ekspertiz raporu (PDF/yazdır)</span>
-      </button>
-    </div>
+    <!-- METRİKLER -->
+    <section class="metrics" id="dk-metrics-mount"></section>
+
+    <!-- HESAPLAMA KAYITLARI PANELİ -->
+    <div id="dk-panel-mount"></div>
   </main>
 
   <!-- math.js (precision evaluator) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 
   <!-- Widget bağımlılıkları (sıralama önemli) -->
-  <script src="js/widgets/widget-base.js?v=2"></script>
-  <script src="js/widgets/deger-kaybi-tables.js?v=2"></script>
-  <script src="js/widgets/deger-kaybi-core.js?v=2"></script>
-  <script src="js/widgets/deger-kaybi-output.js?v=2"></script>
-  <script src="js/widgets/deger-kaybi-widget.js?v=2"></script>
+  <script src="js/widgets/widget-base.js?v=7"></script>
+  <script src="js/widgets/deger-kaybi-tables.js?v=7"></script>
+  <script src="js/widgets/deger-kaybi-core.js?v=7"></script>
+  <script src="js/widgets/deger-kaybi-output.js?v=7"></script>
+  <script src="js/widgets/dk-storage.js?v=7"></script>
+  <script src="js/widgets/dk-metrics.js?v=7"></script>
+  <script src="js/widgets/deger-kaybi-widget.js?v=7"></script>
+  <script src="js/widgets/dk-panel.js?v=7"></script>
 
   <script>
-    document.getElementById('dk-launcher').addEventListener('click', function () {
-      DKWidget.launch();
+    // Header "+ Yeni Dosya" butonu
+    document.getElementById('dk-header-add').addEventListener('click', function () {
+      DKWidget.launchNew();
     });
 
+    // Metrics + Panel mount
+    DKMetrics.mount('#dk-metrics-mount');
+    DKPanel.mount('#dk-panel-mount');
+
+    // Policy warning toggle
     (function () {
       var pw = document.querySelector('section.policy-warning');
       if (!pw) return;
