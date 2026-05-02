@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DRN.EKİN OTO — SBM standardına göre araç değer kaybı hesaplama aracı. Hızlı, ücretsiz tahmini hesap.">
+  <title>Değer Kaybı Hesaplama | DRN.EKİN OTO</title>
+  <meta property="og:title" content="Değer Kaybı Hesaplama | DRN.EKİN OTO">
+  <meta property="og:description" content="SBM standardına göre araç değer kaybı tahmini hesaplama.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="tr_TR">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/widgets.css?v=2">
+  <style>body { margin: 0; font-family: 'Inter', system-ui, sans-serif; }</style>
+</head>
+<body class="admin-shell">
+
+  <header class="admin-header">
+    <h1>🧮 DRN.EKİN OTO — Değer Kaybı Hesaplama</h1>
+    <a href="index.html" style="color:#fff;text-decoration:none;font-size:13px;opacity:.85;">← Ana Sayfa</a>
+  </header>
+
+  <main class="admin-main">
+    <div>
+      <p style="color:#666;margin:0 0 8px;font-size:14px;">SBM (Sigorta Bilgi ve Gözetim Merkezi) standart yöntemine göre tahmini değer kaybı hesaplaması.</p>
+    </div>
+
+    <!-- Açılır/kapanır poliçe ve kural uyarısı (varsayılan: gizli) -->
+    <section class="policy-warning is-collapsed">
+      <button class="policy-warning-trigger" type="button" aria-expanded="false">
+        ⚠️ Poliçe ve Hesaplama Kuralları (Tıklayarak Aç)
+      </button>
+      <div class="policy-warning-body">
+        <p><strong>SBM Standart Hesaplama:</strong> Bu araç Sigorta Bilgi ve Gözetim Merkezi'nin (SBM) standart değer kaybı hesaplama yöntemini uygular. Sonuçlar tahmini olup nihai tutar resmi ekspertiz raporuyla netleşir.</p>
+        <p><strong>Hasar Bedeli:</strong> Onarım faturası tutarı KDV hariç ve iskontosuz girilmelidir. Yedek parça fiyatı + işçilik bedeli toplamıdır.</p>
+        <p><strong>Rayiç Bedel:</strong> Aracın kaza tarihindeki ikinci el piyasa değeridir. TSB Kasko Değer Listesi referans alınır.</p>
+        <p><strong>SBM Geçmiş Hasar:</strong> Aynı poliçe döneminde gerçekleşmiş daha önceki hasarlar; her biri için -%3 katsayı (max -%15) uygulanır.</p>
+        <p><strong>Düşük KM Bonusu:</strong> Aracın kilometresi 1000'in altındaysa otomobil/minibüs/kamyonet/özel/römork/motorsiklet gruplarında +%5 ek katsayı uygulanır.</p>
+        <p><strong>Motorsiklet:</strong> F grubu için sonuç 2.5 ile çarpılır.</p>
+      </div>
+    </section>
+
+    <h2 style="font-size:16px;color:#1a1a2e;margin:28px 0 8px;">Araçlar</h2>
+    <div class="tool-grid">
+      <button id="dk-launcher" type="button">
+        <span class="tool-icon">🧮</span>
+        <span>Değer Kaybı Hesaplama</span>
+        <span class="tool-desc">SBM standardına göre tahmini değer kaybı + ekspertiz raporu (PDF/yazdır)</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- math.js (precision evaluator) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+
+  <!-- Widget bağımlılıkları (sıralama önemli) -->
+  <script src="js/widgets/widget-base.js?v=2"></script>
+  <script src="js/widgets/deger-kaybi-tables.js?v=2"></script>
+  <script src="js/widgets/deger-kaybi-core.js?v=2"></script>
+  <script src="js/widgets/deger-kaybi-output.js?v=2"></script>
+  <script src="js/widgets/deger-kaybi-widget.js?v=2"></script>
+
+  <script>
+    document.getElementById('dk-launcher').addEventListener('click', function () {
+      DKWidget.launch();
+    });
+
+    (function () {
+      var pw = document.querySelector('section.policy-warning');
+      if (!pw) return;
+      var trigger = pw.querySelector('.policy-warning-trigger');
+      trigger.addEventListener('click', function () {
+        var collapsed = pw.classList.toggle('is-collapsed');
+        trigger.setAttribute('aria-expanded', String(!collapsed));
+      });
+    })();
+  </script>
+</body>
+</html>
