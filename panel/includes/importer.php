@@ -411,3 +411,191 @@ function required_label(string $field): string
         'service_entry_date' => 'Giris Tarihi',
     ][$field] ?? $field;
 }
+
+/* ── Deger Kaybi Importer ───────────────────────────────────────────────────── */
+
+function import_dk_excel_file(string $path, string $sourceName): array
+{
+    $started = microtime(true);
+    $sheets  = xlsx_read_sheets($path);
+    $errors  = [];
+    $summaries = [];
+    $imported = 0;
+    $skipped  = 0;
+    $pdo = db();
+    $pdo->beginTransaction();
+
+    $skipSheets = ['sayfa2', 'sheet2', 'ozet', 'summary'];
+
+    try {
+        foreach ($sheets as $sheet) {
+            $sheetKey = header_key($sheet['name']);
+            if (in_array($sheetKey, $skipSheets, true)) {
+                continue;
+            }
+
+            $rows = $sheet['rows'];
+            if (count($rows) < 2) {
+                $summaries[] = $sheet['name'] . ': veri yok';
+                continue;
+            }
+
+            $header = array_map('header_key', array_shift($rows));
+            $map    = build_dk_header_map($header);
+
+            if (!array_key_exists('plaka', $map)) {
+                $errors[]   = 'Sayfa ' . $sheet['name'] . ': PLAKA sutunu bulunamadi';
+                $summaries[] = $sheet['name'] . ': 0 kayit';
+                continue;
+            }
+
+            $sheetImported = 0;
+            foreach ($rows as $rowIndex => $row) {
+                if (row_is_empty($row)) {
+                    continue;
+                }
+                $line = $rowIndex + 2;
+
+                $plaka = normalize_plate(cell($row, $map, 'plaka'));
+                if ($plaka === '') {
+                    $skipped++;
+                    continue;
+                }
+
+                $rec = [
+                    'plaka'          => $plaka,
+                    'adi_soyadi'     => cell($row, $map, 'adi_soyadi'),
+                    'tel'            => cell($row, $map, 'tel'),
+                    'sigorta'        => cell($row, $map, 'sigorta'),
+                    'hasar_tarihi'   => normalize_date(cell($row, $map, 'hasar_tarihi')),
+                    'police_no'      => cell($row, $map, 'police_no'),
+                    'dosya_no'       => cell($row, $map, 'dosya_no'),
+                    'fatura_tarihi'  => normalize_date(cell($row, $map, 'fatura_tarihi')),
+                    'eksper'         => cell($row, $map, 'eksper'),
+                    'teminat'        => normalize_dk_money(cell($row, $map, 'teminat')),
+                    'fatura_tutari'  => normalize_dk_money(cell($row, $map, 'fatura_tutari')),
+                    'yatma_parasi'   => normalize_dk_money(cell($row, $map, 'yatma_parasi')),
+                    'takip'          => cell($row, $map, 'takip'),
+                    'durum'          => cell($row, $map, 'durum'),
+                    'acente'         => cell($row, $map, 'acente'),
+                    'aciklama'       => cell($row, $map, 'aciklama'),
+                ];
+
+                if (dk_duplicate_exists($pdo, $rec)) {
+                    $skipped++;
+                    continue;
+                }
+
+                insert_dk_record($pdo, $rec);
+                $imported++;
+                $sheetImported++;
+            }
+
+            $summaries[] = $sheet['name'] . ': ' . $sheetImported . ' kayit';
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    if ($summaries !== []) {
+        array_unshift($errors, 'Sayfa ozeti: ' . implode(', ', $summaries));
+    }
+    if ($imported === 0 && count($errors) <= 1) {
+        $errors[] = 'Aktarilabilir deger kaybi verisi bulunamadi.';
+    }
+
+    return import_log_result($sourceName, $imported, $skipped, $errors, $started);
+}
+
+function build_dk_header_map(array $headers): array
+{
+    $aliases = [
+        'plaka'         => ['plaka', 'arac plakasi', 'arac plaka'],
+        'adi_soyadi'    => ['adi soyadi', 'ad soyad', 'isim', 'musteri'],
+        'tel'           => ['tel', 'telefon', 'gsm'],
+        'sigorta'       => ['kasko trafik', 'kasko', 'trafik', 'sigorta', 'sigorta turu'],
+        'hasar_tarihi'  => ['hasar tarihi', 'hasar tarih'],
+        'police_no'     => ['police no', 'police numarasi', 'police'],
+        'dosya_no'      => ['dosya no', 'dosya numarasi', 'dosya'],
+        'fatura_tarihi' => ['fatura tarih', 'fatura tarihi'],
+        'eksper'        => ['eksper', 'eksper adi'],
+        'teminat'       => ['teminat'],
+        'fatura_tutari' => ['fat tut', 'fatura tutari', 'fatura tutar', 'tutar'],
+        'yatma_parasi'  => ['yat para', 'yatma parasi', 'hak mahrum', 'yat', 'yatma'],
+        'takip'         => ['takip'],
+        'durum'         => ['durum'],
+        'acente'        => ['acente'],
+        'aciklama'      => ['aciklama', 'not', 'notlar', 'aciklamalar'],
+    ];
+
+    $map = [];
+    foreach ($headers as $index => $header) {
+        foreach ($aliases as $field => $names) {
+            if (!array_key_exists($field, $map) && in_array($header, array_map('header_key', $names), true)) {
+                $map[$field] = $index;
+            }
+        }
+    }
+    return $map;
+}
+
+function normalize_dk_money(string $value): ?float
+{
+    $value = trim($value);
+    if ($value === '' || $value === '-') {
+        return null;
+    }
+    $value = preg_replace('/[₺TL\s]/u', '', $value) ?? $value;
+    // Turkish thousands: 200.000 — strip dots then replace comma with dot
+    if (preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+    } else {
+        $value = str_replace(',', '.', $value);
+    }
+    return is_numeric($value) ? (float)$value : null;
+}
+
+function dk_duplicate_exists(PDO $pdo, array $rec): bool
+{
+    $stmt = $pdo->prepare(
+        'SELECT id FROM deger_kaybi_records WHERE plaka = ? AND adi_soyadi = ? AND dosya_no = ? LIMIT 1'
+    );
+    $stmt->execute([$rec['plaka'], $rec['adi_soyadi'], $rec['dosya_no']]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function insert_dk_record(PDO $pdo, array $rec): void
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO deger_kaybi_records
+         (plaka, adi_soyadi, tel, sigorta, hasar_tarihi, police_no, dosya_no,
+          fatura_tarihi, eksper, teminat, fatura_tutari, yatma_parasi,
+          takip, durum, acente, aciklama)
+         VALUES
+         (:plaka, :adi_soyadi, :tel, :sigorta, :hasar_tarihi, :police_no, :dosya_no,
+          :fatura_tarihi, :eksper, :teminat, :fatura_tutari, :yatma_parasi,
+          :takip, :durum, :acente, :aciklama)'
+    );
+    $stmt->execute([
+        ':plaka'         => $rec['plaka'],
+        ':adi_soyadi'    => $rec['adi_soyadi'],
+        ':tel'           => $rec['tel'],
+        ':sigorta'       => $rec['sigorta'],
+        ':hasar_tarihi'  => $rec['hasar_tarihi'],
+        ':police_no'     => $rec['police_no'],
+        ':dosya_no'      => $rec['dosya_no'],
+        ':fatura_tarihi' => $rec['fatura_tarihi'],
+        ':eksper'        => $rec['eksper'],
+        ':teminat'       => $rec['teminat'],
+        ':fatura_tutari' => $rec['fatura_tutari'],
+        ':yatma_parasi'  => $rec['yatma_parasi'],
+        ':takip'         => $rec['takip'],
+        ':durum'         => $rec['durum'],
+        ':acente'        => $rec['acente'],
+        ':aciklama'      => $rec['aciklama'],
+    ]);
+}

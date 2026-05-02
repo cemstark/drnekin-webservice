@@ -7,7 +7,9 @@ require_once __DIR__ . '/includes/options.php';
 require_login();
 
 $result = null;
-$error = '';
+$error  = '';
+$target = in_array($_POST['target'] ?? '', ['service', 'dk'], true) ? (string)$_POST['target'] : 'service';
+$activeTab = $target;
 $lastLog = db()->query('SELECT * FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,7 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Sadece .xlsx dosyalari desteklenir.';
         } else {
             try {
-                $result = import_excel_file((string)$file['tmp_name'], $name);
+                if ($target === 'dk') {
+                    $result = import_dk_excel_file((string)$file['tmp_name'], $name);
+                } else {
+                    $result = import_excel_file((string)$file['tmp_name'], $name);
+                }
             } catch (Throwable $e) {
                 $error = $e->getMessage();
             }
@@ -63,8 +69,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       </div>
       <div class="form-card-body">
-        <form method="post" enctype="multipart/form-data" style="display:grid;gap:14px">
+
+        <!-- Hedef secici -->
+        <div class="import-tabs">
+          <button type="button" class="import-tab <?= $activeTab === 'service' ? 'import-tab-active' : '' ?>" data-target="service">
+            <strong>Arac Kayitlari</strong>
+            <span>Servis takip tablosu</span>
+          </button>
+          <button type="button" class="import-tab <?= $activeTab === 'dk' ? 'import-tab-active' : '' ?>" data-target="dk">
+            <strong>Deger Kaybi Dosyalari</strong>
+            <span>TUM DEGER KAYBI DOSYALARI.xlsx</span>
+          </button>
+        </div>
+
+        <!-- Hedef aciklamasi -->
+        <div id="hint-service" class="import-hint" style="<?= $activeTab !== 'service' ? 'display:none' : '' ?>">
+          Beklenen sutunlar: <em>Plaka, Ad Soyad, Sigorta Sirketi, Tamir Durumu, Giris Tarihi, Cikis Tarihi</em>
+        </div>
+        <div id="hint-dk" class="import-hint" style="<?= $activeTab !== 'dk' ? 'display:none' : '' ?>">
+          Beklenen sutunlar: <em>Plaka, Adi Soyadi, Tel, Kasko/Trafik, Hasar Tarihi, Police No, Dosya No, Fatura Tarih, Eksper, Teminat, Fat Tut, Yat/Para, Takip, Durum, Acente</em>.
+          Sayfa2 / Ozet sekmeleri otomatik atlanir.
+        </div>
+
+        <form method="post" enctype="multipart/form-data" style="display:grid;gap:14px;margin-top:16px">
           <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="target" id="target-input" value="<?= e($activeTab) ?>">
           <label style="display:grid;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">
             .xlsx dosyasi
             <input type="file" name="excel" accept=".xlsx" required>
@@ -80,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if (is_array($result)): ?>
           <div class="<?= $result['status'] === 'failed' ? 'alert' : 'success' ?>" style="margin-top:16px">
-            Durum: <?= e($result['status']) ?>, aktarilan: <?= e($result['imported']) ?>, atlanan: <?= e($result['skipped']) ?>.
+            Durum: <?= e($result['status']) ?> — aktarilan: <?= e($result['imported']) ?>, atlanan: <?= e($result['skipped']) ?>
           </div>
           <?php if (!empty($result['errors'])): ?>
             <pre class="error-list"><?= e(implode("\n", array_slice($result['errors'], 0, 20))) ?></pre>
@@ -89,16 +118,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if ($lastLog): ?>
           <div class="log-note">
-            Son log: <?= e(format_tr_datetime($lastLog['created_at'] ?? null)) ?>,
-            durum <?= e($lastLog['status']) ?>,
-            aktarilan <?= e($lastLog['imported_count']) ?>,
-            atlanan <?= e($lastLog['skipped_count']) ?>.
+            Son import: <?= e(format_tr_datetime($lastLog['created_at'] ?? null)) ?> —
+            <?= e($lastLog['status']) ?>, aktarilan <?= e($lastLog['imported_count']) ?>, atlanan <?= e($lastLog['skipped_count']) ?>.
             <?php if (!empty($lastLog['error_summary'])): ?>
               <pre class="error-list"><?= e($lastLog['error_summary']) ?></pre>
             <?php endif; ?>
           </div>
         <?php endif; ?>
+
       </div>
+      <script>
+      (function () {
+        var tabs = document.querySelectorAll('.import-tab');
+        var input = document.getElementById('target-input');
+        tabs.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            tabs.forEach(function (b) { b.classList.remove('import-tab-active'); });
+            btn.classList.add('import-tab-active');
+            var t = btn.dataset.target;
+            input.value = t;
+            document.getElementById('hint-service').style.display = t === 'service' ? '' : 'none';
+            document.getElementById('hint-dk').style.display = t === 'dk' ? '' : 'none';
+          });
+        });
+      })();
+      </script>
     </div>
   </main>
 </body>
