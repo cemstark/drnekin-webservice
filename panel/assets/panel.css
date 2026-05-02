@@ -1364,6 +1364,112 @@ input[type="radio"] {
   }
 }
 
+/* ── Table Switcher ─────────────────────────────────────────────────────────── */
+.table-switcher {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  box-shadow: var(--shadow);
+  width: fit-content;
+}
+
+.tsw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  min-height: 0 !important;
+}
+
+.tsw-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.tsw-btn.tsw-active {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.tsw-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tsw-btn.tsw-active .tsw-count {
+  background: var(--accent-bg);
+  color: var(--accent-dk);
+}
+
+/* ── Deger Kaybi Table ───────────────────────────────────────────────────────── */
+
+/* Row renk kodlama — Excel'deki mantıkla örtüşür */
+tbody tr.dk-normal td { border-left: 3px solid var(--green); }
+tbody tr.dk-yatma td:first-child { border-left: 3px solid var(--accent); }
+tbody tr.dk-yatma { background: #f0f9ff; }
+tbody tr.dk-yatma:hover { background: #e0f2fe; }
+tbody tr.dk-bekle td:first-child { border-left: 3px solid var(--amber); }
+tbody tr.dk-bekle { background: var(--amber-bg); }
+tbody tr.dk-bekle:hover { background: #fef3c7; }
+tbody tr.dk-dava td:first-child { border-left: 3px solid var(--red); }
+tbody tr.dk-dava { background: var(--red-bg); }
+tbody tr.dk-dava:hover { background: #fee2e2; }
+
+/* DURUM pill renkleri */
+.pill.dk-pill-dk-normal  { background: var(--green-bg);  color: var(--green);      border-color: var(--green-bdr);  }
+.pill.dk-pill-dk-yatma   { background: var(--accent-bg); color: var(--accent-dk);  border-color: var(--accent-bdr); }
+.pill.dk-pill-dk-bekle   { background: var(--amber-bg);  color: var(--amber);      border-color: var(--amber-bdr);  }
+.pill.dk-pill-dk-dava    { background: var(--red-bg);    color: var(--red);        border-color: var(--red-bdr);    }
+
+/* Legend */
+.dk-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dk-leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.dk-leg-item.dk-normal { background: var(--green-bg);  color: var(--green);     border-color: var(--green-bdr); }
+.dk-leg-item.dk-yatma  { background: var(--accent-bg); color: var(--accent-dk); border-color: var(--accent-bdr); }
+.dk-leg-item.dk-bekle  { background: var(--amber-bg);  color: var(--amber);     border-color: var(--amber-bdr); }
+.dk-leg-item.dk-dava   { background: var(--red-bg);    color: var(--red);       border-color: var(--red-bdr); }
+
 /* ── Column Filter Popup ────────────────────────────────────────────────────── */
 .cfp-btn {
   display: inline-flex;

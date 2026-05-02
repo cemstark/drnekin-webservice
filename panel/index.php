@@ -33,6 +33,34 @@ function index_url(array $overrides = []): string
     return panel_url('index.php' . ($query !== '' ? '?' . $query : ''));
 }
 
+function dk_durum_tone(string $durum): string
+{
+    $d = function_exists('mb_strtolower') ? mb_strtolower($durum, 'UTF-8') : strtolower($durum);
+    if (str_contains($d, 'dava')) return 'dk-dava';
+    if (str_contains($d, 'yatma')) return 'dk-yatma';
+    if (trim($durum) === '') return 'dk-bekle';
+    return 'dk-normal';
+}
+
+function dk_money(?float $val): string
+{
+    if ($val === null) return '-';
+    return number_format($val, 0, ',', '.') . ' ₺';
+}
+
+function dk_table_exists(PDO $pdo): bool
+{
+    static $exists = null;
+    if ($exists !== null) return $exists;
+    try {
+        $pdo->query('SELECT id FROM deger_kaybi_records LIMIT 0');
+        $exists = true;
+    } catch (Throwable $e) {
+        $exists = false;
+    }
+    return $exists;
+}
+
 function index_insurance_type_column_exists(PDO $pdo): bool
 {
     static $exists = null;
@@ -115,6 +143,17 @@ $statusesFromDb = $pdo->query('SELECT repair_status FROM service_records WHERE r
 $statuses = array_values(array_unique(array_merge(array_keys(repair_status_options()), $statusesFromDb)));
 $summary = $pdo->query('SELECT COUNT(*) total, SUM(service_exit_date IS NULL) open_count, SUM(mini_repair_has = 1) mini_count FROM service_records')->fetch();
 $lastImport = $pdo->query('SELECT created_at FROM import_logs ORDER BY created_at DESC LIMIT 1')->fetch();
+
+$dkRecords = [];
+$dkTableReady = dk_table_exists($pdo);
+if ($dkTableReady) {
+    try {
+        $dkStmt = $pdo->query('SELECT * FROM deger_kaybi_records ORDER BY id DESC LIMIT 500');
+        $dkRecords = $dkStmt->fetchAll();
+    } catch (Throwable $e) {
+        $dkRecords = [];
+    }
+}
 
 $policyExpiringSoon = [];
 try {
@@ -241,7 +280,18 @@ try {
       <a class="btn-secondary" href="<?= e(panel_url('index.php')) ?>">Temizle</a>
     </form>
 
-    <section class="table-card">
+    <div class="table-switcher">
+      <button type="button" class="tsw-btn tsw-active" data-panel="panel-arac">
+        Arac Kayitlari
+        <span class="tsw-count"><?= e($totalRecords) ?></span>
+      </button>
+      <button type="button" class="tsw-btn" data-panel="panel-dk">
+        Deger Kaybi Dosyalari
+        <span class="tsw-count"><?= e(count($dkRecords)) ?></span>
+      </button>
+    </div>
+
+    <section class="table-card" id="panel-arac">
       <div class="table-head">
         <h2>Arac kayitlari</h2>
         <div class="table-head-tools">
@@ -303,10 +353,100 @@ try {
         </nav>
       <?php endif; ?>
     </section>
+
+    <section class="table-card table-card-dk" id="panel-dk" style="display:none">
+      <div class="table-head">
+        <h2>Deger Kaybi Dosyalari</h2>
+        <div class="table-head-tools">
+          <span><?= e(count($dkRecords)) ?> kayit</span>
+          <div class="dk-legend">
+            <span class="dk-leg-item dk-normal">Aktif</span>
+            <span class="dk-leg-item dk-yatma">Yatma/Kombine</span>
+            <span class="dk-leg-item dk-bekle">Beklemede</span>
+            <span class="dk-leg-item dk-dava">Dava</span>
+          </div>
+        </div>
+      </div>
+      <?php if (!$dkTableReady): ?>
+        <div class="empty-state">
+          <strong>Tablo henuz olusturulmadi</strong>
+          <span>Lutfen once <a href="<?= e(panel_url('install/migrate.php?run=1')) ?>">Migration</a> calistirin.</span>
+        </div>
+      <?php elseif ($dkRecords === []): ?>
+        <div class="empty-state">
+          <strong>Kayit bulunamadi</strong>
+          <span>Deger kaybi dosyasi eklenmemis.</span>
+        </div>
+      <?php else: ?>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Plaka</th>
+              <th>Adi Soyadi</th>
+              <th>Tel</th>
+              <th>Kasko/Trafik</th>
+              <th>Hasar Tarihi</th>
+              <th>Police No</th>
+              <th>Dosya No</th>
+              <th>Fatura Tarihi</th>
+              <th>Eksper</th>
+              <th>Teminat</th>
+              <th>Fatura Tutari</th>
+              <th>Yatma/Hak Mahrum</th>
+              <th>Takip</th>
+              <th>Durum</th>
+              <th>Acente</th>
+              <th>Aciklama</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($dkRecords as $dk):
+              $tone = dk_durum_tone((string)($dk['durum'] ?? ''));
+            ?>
+              <tr class="<?= e($tone) ?>">
+                <td data-label="Plaka"><strong><?= e($dk['plaka']) ?></strong></td>
+                <td data-label="Adi Soyadi" style="font-weight:600"><?= e($dk['adi_soyadi']) ?></td>
+                <td data-label="Tel" style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e($dk['tel'] ?: '-') ?></td>
+                <td data-label="Kasko/Trafik"><span class="type-badge"><?= e($dk['sigorta'] ?: '-') ?></span></td>
+                <td data-label="Hasar Tarihi" style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(format_tr_date($dk['hasar_tarihi'])) ?></td>
+                <td data-label="Police No" style="color:var(--muted);font-size:12px"><?= e($dk['police_no'] ?: '-') ?></td>
+                <td data-label="Dosya No" style="color:var(--muted);font-size:12px"><?= e($dk['dosya_no'] ?: '-') ?></td>
+                <td data-label="Fatura Tarihi" style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(format_tr_date($dk['fatura_tarihi'])) ?></td>
+                <td data-label="Eksper" style="color:var(--muted)"><?= e($dk['eksper'] ?: '-') ?></td>
+                <td data-label="Teminat" style="font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(dk_money(isset($dk['teminat']) && $dk['teminat'] !== null ? (float)$dk['teminat'] : null)) ?></td>
+                <td data-label="Fatura Tutari" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600"><?= e(dk_money(isset($dk['fatura_tutari']) && $dk['fatura_tutari'] !== null ? (float)$dk['fatura_tutari'] : null)) ?></td>
+                <td data-label="Yatma/Hak Mahrum" style="font-family:'IBM Plex Mono',monospace;font-size:12px"><?= e(dk_money(isset($dk['yatma_parasi']) && $dk['yatma_parasi'] !== null ? (float)$dk['yatma_parasi'] : null)) ?></td>
+                <td data-label="Takip"><?= e($dk['takip'] ?: '-') ?></td>
+                <td data-label="Durum"><span class="pill dk-pill-<?= e($tone) ?>"><?= e($dk['durum'] ?: 'Belirsiz') ?></span></td>
+                <td data-label="Acente" style="color:var(--muted)"><?= e($dk['acente'] ?: '-') ?></td>
+                <td data-label="Aciklama" style="color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis"><?= e($dk['aciklama'] ?: '-') ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php endif; ?>
+    </section>
   </main>
   <script>
+  // Tab switcher
   (function () {
-    var table = document.querySelector('.table-card .table-wrap table');
+    var btns = document.querySelectorAll('.tsw-btn');
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btns.forEach(function (b) { b.classList.remove('tsw-active'); });
+        btn.classList.add('tsw-active');
+        var target = btn.dataset.panel;
+        document.getElementById('panel-arac').style.display = target === 'panel-arac' ? '' : 'none';
+        document.getElementById('panel-dk').style.display = target === 'panel-dk' ? '' : 'none';
+      });
+    });
+  })();
+
+  // Column filter (arac kayitlari tablosu)
+  (function () {
+    var table = document.querySelector('#panel-arac .table-wrap table');
     if (!table) return;
     var filterHeaders = Array.from(table.querySelectorAll('thead th[data-col]'));
     var tbody = table.querySelector('tbody');

@@ -254,6 +254,34 @@ try {
     add_column_if_missing($pdo, $dbName, 'service_attachments', 'file_path', 'file_path VARCHAR(500) NULL AFTER file_size', $log);
     migrate_attachment_blobs_to_files($pdo, $dbName, $log);
 
+    create_table_if_missing($pdo, $dbName, 'deger_kaybi_records',
+        "CREATE TABLE deger_kaybi_records (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            plaka VARCHAR(20) NOT NULL DEFAULT '',
+            adi_soyadi VARCHAR(150) NOT NULL DEFAULT '',
+            tel VARCHAR(30) NOT NULL DEFAULT '',
+            sigorta VARCHAR(150) NOT NULL DEFAULT '',
+            hasar_tarihi DATE NULL,
+            police_no VARCHAR(80) NOT NULL DEFAULT '',
+            dosya_no VARCHAR(80) NOT NULL DEFAULT '',
+            fatura_tarihi DATE NULL,
+            eksper VARCHAR(100) NOT NULL DEFAULT '',
+            teminat DECIMAL(14,2) NULL,
+            fatura_tutari DECIMAL(14,2) NULL,
+            yatma_parasi DECIMAL(14,2) NULL,
+            takip VARCHAR(100) NOT NULL DEFAULT '',
+            durum VARCHAR(250) NOT NULL DEFAULT '',
+            acente VARCHAR(150) NOT NULL DEFAULT '',
+            aciklama TEXT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY dk_plaka_idx (plaka),
+            KEY dk_durum_idx (durum(100))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        $log
+    );
+
     create_table_if_missing($pdo, $dbName, 'cron_runs',
         "CREATE TABLE cron_runs (
             job_key VARCHAR(60) NOT NULL,
