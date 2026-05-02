@@ -630,15 +630,28 @@ td strong, .plate-mono {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 12px 18px;
+  border: 0;
   border-bottom: 1px solid var(--amber-bdr);
   background: #fef9ec;
+  cursor: pointer;
+  text-align: left;
 }
 
 .policy-warning-head span {
   font-size: 13px;
   font-weight: 700;
   color: #92400e;
+}
+
+.policy-warning-head:hover {
+  background: #fff4d8;
+}
+
+.policy-warning-head:focus-visible {
+  outline: 3px solid rgba(245, 158, 11, .28);
+  outline-offset: -3px;
 }
 
 .policy-count {
@@ -650,6 +663,28 @@ td strong, .plate-mono {
   color: #92400e;
   font-size: 11px;
   font-weight: 700;
+}
+
+.policy-toggle-label {
+  margin-left: auto;
+  color: #78350f !important;
+}
+
+.policy-warning-body {
+  max-height: 720px;
+  opacity: 1;
+  overflow: auto;
+  transition: max-height .22s ease, opacity .18s ease;
+}
+
+.policy-warning.is-collapsed .policy-warning-head {
+  border-bottom-color: transparent;
+}
+
+.policy-warning.is-collapsed .policy-warning-body {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 /* ── Form Cards ────────────────────────────────────────────────────────────── */

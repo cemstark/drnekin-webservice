@@ -295,7 +295,7 @@
 .dk-btn-ghost { background: transparent; color: #888; }
 
 /* === POLICY WARNING TOGGLE === */
-.policy-warning {
+.admin-shell .policy-warning {
   background: #fff8e6;
   border: 1px solid #ffe0a0;
   border-radius: 12px;
@@ -304,7 +304,7 @@
   overflow: hidden;
   transition: max-height .35s ease, opacity .25s ease;
 }
-.policy-warning-trigger {
+.admin-shell .policy-warning-trigger {
   width: 100%;
   display: flex;
   align-items: center;
@@ -319,13 +319,13 @@
   text-align: left;
   font-family: inherit;
 }
-.policy-warning-trigger::after {
+.admin-shell .policy-warning-trigger::after {
   content: '▼';
   font-size: 11px;
   transition: transform .2s;
 }
-.policy-warning.is-collapsed .policy-warning-trigger::after { transform: rotate(-90deg); }
-.policy-warning-body {
+.admin-shell .policy-warning.is-collapsed .policy-warning-trigger::after { transform: rotate(-90deg); }
+.admin-shell .policy-warning-body {
   padding: 0 20px 20px;
   max-height: 600px;
   opacity: 1;
@@ -335,7 +335,7 @@
   color: #5a4500;
   line-height: 1.6;
 }
-.policy-warning.is-collapsed .policy-warning-body {
+.admin-shell .policy-warning.is-collapsed .policy-warning-body {
   max-height: 0;
   opacity: 0;
   padding-top: 0;

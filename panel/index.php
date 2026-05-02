@@ -178,6 +178,7 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><?= e(panel_config('app_name')) ?></title>
   <?php render_panel_head_assets(); ?>
+  <link rel="stylesheet" href="../css/widgets.css?v=3">
 </head>
 <body>
   <header class="topbar">
@@ -215,43 +216,46 @@ try {
     </section>
 
     <?php if ($policyExpiringSoon !== []): ?>
-      <section class="policy-warning">
-        <div class="policy-warning-head">
+      <section class="policy-warning is-collapsed" data-policy-warning>
+        <button class="policy-warning-head" type="button" aria-expanded="false">
           <span style="font-size:15px">&#9888;&#65039;</span>
           <span>Police bitisi yaklasan araclar</span>
           <span class="policy-count"><?= count($policyExpiringSoon) ?> arac</span>
           <span style="font-size:12px;color:#92400e;margin-left:4px;font-weight:500">Bugun ile 30 gun arasinda biten policeler.</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Plaka</th>
-                <th>Musteri</th>
-                <th>Sigorta</th>
-                <th>Bitis</th>
-                <th>Kalan</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php foreach ($policyExpiringSoon as $p):
-                $d = (int)$p['days_left'];
-                $tone = $d <= 7 ? 'status-red' : 'status-yellow';
-              ?>
+          <span class="policy-toggle-label">Goster</span>
+        </button>
+        <div class="policy-warning-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
                 <tr>
-                  <td data-label="Plaka"><strong><?= e($p['plate']) ?></strong></td>
-                  <td data-label="Musteri"><?= e($p['customer_name']) ?></td>
-                  <td data-label="Sigorta" style="color:var(--muted)"><?= e($p['insurance_company'] ?: '-') ?></td>
-                  <td data-label="Bitis" style="color:var(--muted)"><?= e(format_tr_date($p['policy_end_date'])) ?></td>
-                  <td data-label="Kalan"><span class="pill <?= $tone ?>"><?= e($d) ?> gun</span></td>
-                  <td data-label="Islem" style="text-align:right">
-                    <a class="btn-soft" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
-                  </td>
+                  <th>Plaka</th>
+                  <th>Musteri</th>
+                  <th>Sigorta</th>
+                  <th>Bitis</th>
+                  <th>Kalan</th>
+                  <th></th>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php foreach ($policyExpiringSoon as $p):
+                  $d = (int)$p['days_left'];
+                  $tone = $d <= 7 ? 'status-red' : 'status-yellow';
+                ?>
+                  <tr>
+                    <td data-label="Plaka"><strong><?= e($p['plate']) ?></strong></td>
+                    <td data-label="Musteri"><?= e($p['customer_name']) ?></td>
+                    <td data-label="Sigorta" style="color:var(--muted)"><?= e($p['insurance_company'] ?: '-') ?></td>
+                    <td data-label="Bitis" style="color:var(--muted)"><?= e(format_tr_date($p['policy_end_date'])) ?></td>
+                    <td data-label="Kalan"><span class="pill <?= $tone ?>"><?= e($d) ?> gun</span></td>
+                    <td data-label="Islem" style="text-align:right">
+                      <a class="btn-soft" href="<?= e(panel_url('view.php?id=' . (int)$p['id'])) ?>">Detay</a>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     <?php endif; ?>
@@ -359,6 +363,7 @@ try {
         <h2>Deger Kaybi Dosyalari</h2>
         <div class="table-head-tools">
           <span><?= e(count($dkRecords)) ?> kayit</span>
+          <button type="button" class="btn-soft" data-dk-widget-launch>Hesaplama Widget'i</button>
           <div class="dk-legend">
             <span class="dk-leg-item dk-normal">Aktif</span>
             <span class="dk-leg-item dk-yatma">Yatma/Kombine</span>
@@ -429,9 +434,22 @@ try {
       <?php endif; ?>
     </section>
   </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+  <script src="../js/widgets/widget-base.js?v=3"></script>
+  <script src="../js/widgets/deger-kaybi-tables.js?v=3"></script>
+  <script src="../js/widgets/deger-kaybi-core.js?v=3"></script>
+  <script src="../js/widgets/deger-kaybi-output.js?v=3"></script>
+  <script src="../js/widgets/deger-kaybi-widget.js?v=3"></script>
+
   <script>
   // Tab switcher
   (function () {
+    function openDkWidget() {
+      if (window.DKWidget) {
+        window.DKWidget.launch();
+      }
+    }
+
     var btns = document.querySelectorAll('.tsw-btn');
     btns.forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -440,6 +458,27 @@ try {
         var target = btn.dataset.panel;
         document.getElementById('panel-arac').style.display = target === 'panel-arac' ? '' : 'none';
         document.getElementById('panel-dk').style.display = target === 'panel-dk' ? '' : 'none';
+        if (target === 'panel-dk') {
+          openDkWidget();
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-dk-widget-launch]').forEach(function (btn) {
+      btn.addEventListener('click', openDkWidget);
+    });
+  })();
+
+  // Policy warning toggle
+  (function () {
+    document.querySelectorAll('[data-policy-warning]').forEach(function (section) {
+      var trigger = section.querySelector('.policy-warning-head');
+      var label = section.querySelector('.policy-toggle-label');
+      if (!trigger) return;
+      trigger.addEventListener('click', function () {
+        var collapsed = section.classList.toggle('is-collapsed');
+        trigger.setAttribute('aria-expanded', String(!collapsed));
+        if (label) label.textContent = collapsed ? 'Goster' : 'Gizle';
       });
     });
   })();
