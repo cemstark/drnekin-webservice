@@ -425,7 +425,7 @@ function import_dk_excel_file(string $path, string $sourceName): array
     $pdo = db();
     $pdo->beginTransaction();
 
-    $skipSheets = ['sayfa2', 'sheet2', 'ozet', 'summary'];
+    $skipSheets = ['ozet', 'summary'];
 
     try {
         foreach ($sheets as $sheet) {
